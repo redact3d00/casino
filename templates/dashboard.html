@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - BeaversCasino{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/games.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <h2>🎮 Available Games</h2>
+                <div id="games-container" class="games-grid">
+                    <!-- Games will be loaded by JavaScript -->
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>📊 Recent Activity</h2>
+                <div id="game-history">
+                    <!-- Game history will be loaded by JavaScript -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <h2>💰 Quick Actions</h2>
+                <div class="action-buttons">
+                    <a href="/payments/deposit" class="btn btn-success btn-block mb-2">
+                        💵 Deposit Funds
+                    </a>
+                    <a href="/payments/withdraw" class="btn btn-primary btn-block mb-2">
+                        🏧 Request Withdrawal
+                    </a>
+                    <a href="/user/profile" class="btn btn-warning btn-block mb-2">
+                        👤 Edit Profile
+                    </a>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>📈 Statistics</h2>
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Current Balance</span>
+                        <span class="stat-value">${{ "%.2f"|format(current_user.balance) }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Bets</span>
+                        <span class="stat-value" id="total-bets">Loading...</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Wins</span>
+                        <span class="stat-value" id="total-wins">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>🎁 Bonuses</h2>
+                <div id="bonuses-list">
+                    <p class="text-muted">Loading bonuses...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .dashboard {
+        display: grid;
+        gap: 2rem;
+    }
+    
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+    }
+    
+    .col-md-8 {
+        flex: 2;
+        min-width: 300px;
+    }
+    
+    .col-md-4 {
+        flex: 1;
+        min-width: 250px;
+    }
+    
+    .btn-block {
+        display: block;
+        width: 100%;
+    }
+    
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .stat-label {
+        color: #ccc;
+    }
+    
+    .stat-value {
+        font-weight: bold;
+        color: #ffd700;
+    }
+</style>
+
+<script>
+    // Загрузка статистики пользователя
+    async function loadUserStats() {
+        try {
+            const response = await fetch('/user/profile', {
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                // Можно добавить дополнительную статистику
+            }
+        } catch (error) {
+            console.error('Failed to load user stats:', error);
+        }
+    }
+    
+    // Загрузка бонусов
+    async function loadBonuses() {
+        try {
+            const response = await fetch('/user/bonuses', {
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                displayBonuses(data.bonuses);
+            }
+        } catch (error) {
+            console.error('Failed to load bonuses:', error);
+        }
+    }
+    
+    function displayBonuses(bonuses) {
+        const container = document.getElementById('bonuses-list');
+        if (!container) return;
+        
+        if (!bonuses || bonuses.length === 0) {
+            container.innerHTML = '<p class="text-muted">No active bonuses</p>';
+            return;
+        }
+        
+        container.innerHTML = bonuses.map(bonus => `
+            <div class="bonus-item">
+                <strong>${bonus.type}</strong>
+                <div>Amount: $${bonus.amount?.toFixed(2) || 'N/A'}</div>
+                <div>Status: <span class="badge badge-${bonus.status === 'active' ? 'success' : 'warning'}">${bonus.status}</span></div>
+            </div>
+        `).join('');
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        loadUserStats();
+        loadBonuses();
+    });
+</script>
+{% endblock %}

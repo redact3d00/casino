@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}Admin Panel - BeaversCasino{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <div class="admin-sidebar">
+            <div class="sidebar-header">
+                <h3>🎰 Admin Panel</h3>
+                <small>BeaversCasino Management</small>
+            </div>
+            
+            <ul class="sidebar-menu">
+                <li><a href="/admin" class="{{ 'active' if request.path == '/admin' }}">
+                    📊 Dashboard
+                </a></li>
+                <li><a href="/admin/users" class="{{ 'active' if '/admin/users' in request.path }}">
+                    👥 Users
+                </a></li>
+                <li><a href="/admin/games" class="{{ 'active' if '/admin/games' in request.path }}">
+                    🎮 Games
+                </a></li>
+                <li><a href="/admin/transactions" class="{{ 'active' if '/admin/transactions' in request.path }}">
+                    💰 Transactions
+                </a></li>
+                <li><a href="/admin/payouts" class="{{ 'active' if '/admin/payouts' in request.path }}">
+                    🏧 Payouts
+                </a></li>
+                <li><a href="/admin/audit" class="{{ 'active' if '/admin/audit' in request.path }}">
+                    📝 Audit Log
+                </a></li>
+                <li><a href="/admin/reports" class="{{ 'active' if '/admin/reports' in request.path }}">
+                    📈 Reports
+                </a></li>
+                <li><a href="/admin/settings" class="{{ 'active' if '/admin/settings' in request.path }}">
+                    ⚙️ Settings
+                </a></li>
+                <li><a href="/" class="logout-link">
+                    ← Back to Site
+                </a></li>
+            </ul>
+            
+            <div class="sidebar-footer">
+                <small>Logged in as: {{ current_user.username }}</small>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="admin-content">
+            <div class="content-header">
+                <h1>{% block page_title %}Admin Dashboard{% endblock %}</h1>
+                <div class="header-actions">
+                    {% block header_actions %}{% endblock %}
+                </div>
+            </div>
+            
+            <div class="alerts">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+            
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

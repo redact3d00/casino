@@ -1,0 +1,487 @@
+{% extends "base.html" %}
+
+{% block title %}Support - BeaversCasino{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <h2><i class="fas fa-headset"></i> Support Center</h2>
+            <p class="text-muted">How can we help you today?</p>
+            
+            <div class="support-categories mt-4">
+                <h5>Categories</h5>
+                <div class="list-group">
+                    <a href="#" class="list-group-item list-group-item-action" onclick="filterTickets('deposit')">
+                        <i class="fas fa-money-bill-wave"></i> Deposit Issues
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action" onclick="filterTickets('withdrawal')">
+                        <i class="fas fa-university"></i> Withdrawal Issues
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action" onclick="filterTickets('account')">
+                        <i class="fas fa-user"></i> Account Issues
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action" onclick="filterTickets('technical')">
+                        <i class="fas fa-tools"></i> Technical Problems
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action" onclick="filterTickets('game')">
+                        <i class="fas fa-gamepad"></i> Game Issues
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action" onclick="filterTickets('bonus')">
+                        <i class="fas fa-gift"></i> Bonuses & Promotions
+                    </a>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <h5>Quick Actions</h5>
+                <button class="btn btn-primary btn-block mb-2" onclick="showNewTicketModal()">
+                    <i class="fas fa-plus"></i> New Support Ticket
+                </button>
+                <button class="btn btn-outline-secondary btn-block" onclick="refreshTickets()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            
+            <div class="mt-4">
+                <h5>Support Stats</h5>
+                <div class="support-stats">
+                    <div class="stat-item d-flex justify-content-between mb-2">
+                        <span>Open Tickets:</span>
+                        <strong id="open-tickets-count">0</strong>
+                    </div>
+                    <div class="stat-item d-flex justify-content-between mb-2">
+                        <span>Avg Response Time:</span>
+                        <span id="avg-response-time">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3><i class="fas fa-ticket-alt"></i> My Support Tickets</h3>
+                <div class="input-group" style="max-width: 300px;">
+                    <input type="text" id="ticket-search" class="form-control" placeholder="Search tickets...">
+                    <button class="btn btn-outline-secondary" onclick="searchTickets()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="tickets-list">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading tickets...</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <h4><i class="fas fa-question-circle"></i> Frequently Asked Questions</h4>
+            <div class="accordion mt-3" id="faqAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                            How do I make a deposit?
+                        </button>
+                    </h2>
+                    <div id="faq1" class="accordion-collapse collapse show">
+                        <div class="accordion-body">
+                            Go to the Payments page, select your preferred payment method, enter the amount, and follow the instructions. Most deposits are instant.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                            How long do withdrawals take?
+                        </button>
+                    </h2>
+                    <div id="faq2" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            Withdrawal processing times vary by method: e-wallets (0-24 hours), credit cards (1-3 business days), bank transfers (3-5 business days).
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                            Is my personal information secure?
+                        </button>
+                    </h2>
+                    <div id="faq3" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            Yes, we use bank-level SSL encryption and never share your information with third parties without your consent.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal для нового тикета -->
+<div class="modal fade" id="newTicketModal">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus"></i> New Support Ticket</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="new-ticket-form">
+                    <div class="mb-3">
+                        <label for="ticket-subject" class="form-label">Subject</label>
+                        <input type="text" id="ticket-subject" class="form-control" placeholder="Briefly describe your issue" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="ticket-category" class="form-label">Category</label>
+                        <select id="ticket-category" class="form-control" required>
+                            <option value="">Select a category</option>
+                            <option value="deposit">Deposit Issues</option>
+                            <option value="withdrawal">Withdrawal Issues</option>
+                            <option value="account">Account Issues</option>
+                            <option value="technical">Technical Problems</option>
+                            <option value="game">Game Issues</option>
+                            <option value="bonus">Bonuses & Promotions</option>
+                            <option value="security">Security Concerns</option>
+                            <option value="other">Other Questions</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="ticket-message" class="form-label">Message</label>
+                        <textarea id="ticket-message" class="form-control" rows="6" 
+                                  placeholder="Please provide detailed information about your issue..." required></textarea>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Our support team typically responds within 1-2 hours during business hours.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="createNewTicket()">Submit Ticket</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        margin: 0 -1rem;
+    }
+    
+    .col-md-4, .col-md-8 {
+        padding: 0 1rem;
+        flex: 1;
+        min-width: 300px;
+    }
+    
+    .col-md-4 {
+        max-width: 400px;
+    }
+    
+    .list-group-item {
+        border-left: none;
+        border-right: none;
+        border-radius: 0;
+    }
+    
+    .list-group-item:first-child {
+        border-top: none;
+    }
+    
+    .list-group-item:last-child {
+        border-bottom: none;
+    }
+    
+    .ticket-item {
+        padding: 1rem;
+        border-bottom: 1px solid #dee2e6;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .ticket-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .ticket-item:last-child {
+        border-bottom: none;
+    }
+    
+    .ticket-status {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: bold;
+    }
+    
+    .status-open {
+        background-color: #d1ecf1;
+        color: #0c5460;
+    }
+    
+    .status-in-progress {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-closed {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .priority-high {
+        color: #dc3545;
+    }
+    
+    .priority-medium {
+        color: #ffc107;
+    }
+    
+    .priority-low {
+        color: #28a745;
+    }
+</style>
+
+<script>
+    // Загрузка тикетов
+    async function loadTickets() {
+        try {
+            const response = await fetch('/support/tickets', {
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                displayTickets(data.tickets);
+                updateSupportStats(data.tickets);
+            }
+        } catch (error) {
+            console.error('Failed to load tickets:', error);
+            document.getElementById('tickets-list').innerHTML = 
+                '<p class="text-danger">Failed to load tickets</p>';
+        }
+    }
+    
+    function displayTickets(tickets) {
+        const container = document.getElementById('tickets-list');
+        if (!container) return;
+        
+        if (!tickets || tickets.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5>No support tickets yet</h5>
+                    <p class="text-muted">Create your first support ticket to get help</p>
+                    <button class="btn btn-primary" onclick="showNewTicketModal()">
+                        <i class="fas fa-plus"></i> Create Ticket
+                    </button>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = tickets.map(ticket => `
+            <div class="ticket-item" onclick="viewTicket(${ticket.id})">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div style="flex: 1;">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h6 class="mb-0">${ticket.subject}</h6>
+                            ${ticket.unread_messages > 0 ? 
+                                `<span class="badge bg-danger">${ticket.unread_messages} new</span>` : ''}
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="ticket-status status-${ticket.status}">
+                                ${ticket.status.replace('_', ' ').toUpperCase()}
+                            </span>
+                            <span class="text-muted">
+                                <i class="fas fa-tag"></i> ${ticket.category || 'General'}
+                            </span>
+                            <span class="priority-${ticket.priority}">
+                                <i class="fas fa-exclamation-circle"></i> ${ticket.priority.toUpperCase()}
+                            </span>
+                        </div>
+                        <p class="text-muted mt-2 mb-0">${ticket.message.substring(0, 100)}${ticket.message.length > 100 ? '...' : ''}</p>
+                    </div>
+                    <div class="text-end">
+                        <div class="text-muted">
+                            <small>${formatDate(ticket.updated_at)}</small>
+                        </div>
+                        <div>
+                            <span class="badge bg-secondary">#${ticket.id}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    function updateSupportStats(tickets) {
+        const openTickets = tickets.filter(t => t.status === 'open').length;
+        document.getElementById('open-tickets-count').textContent = openTickets;
+        
+        // Простая логика для среднего времени ответа
+        const avgResponseTime = '2 hours';
+        document.getElementById('avg-response-time').textContent = avgResponseTime;
+    }
+    
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = now - date;
+        
+        if (diff < 60000) return 'Just now';
+        if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+        if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+        return date.toLocaleDateString();
+    }
+    
+    // Фильтрация тикетов
+    function filterTickets(category) {
+        const tickets = document.querySelectorAll('.ticket-item');
+        tickets.forEach(ticket => {
+            const ticketCategory = ticket.querySelector('.text-muted i.fa-tag')?.parentNode?.textContent?.toLowerCase();
+            if (!category || (ticketCategory && ticketCategory.includes(category))) {
+                ticket.style.display = 'block';
+            } else {
+                ticket.style.display = 'none';
+            }
+        });
+    }
+    
+    // Поиск тикетов
+    function searchTickets() {
+        const query = document.getElementById('ticket-search').value.toLowerCase();
+        if (!query) {
+            loadTickets();
+            return;
+        }
+        
+        fetch(`/support/search?q=${encodeURIComponent(query)}`, {
+            credentials: 'include'
+        })
+        .then(response => response.json())
+        .then(data => {
+            displayTickets(data.tickets);
+        })
+        .catch(error => {
+            console.error('Search error:', error);
+        });
+    }
+    
+    // Просмотр тикета
+    function viewTicket(ticketId) {
+        window.location.href = `/support/ticket/${ticketId}`;
+    }
+    
+    // Создание нового тикета
+    function showNewTicketModal() {
+        const modal = new bootstrap.Modal(document.getElementById('newTicketModal'));
+        modal.show();
+    }
+    
+    async function createNewTicket() {
+        const subject = document.getElementById('ticket-subject').value;
+        const category = document.getElementById('ticket-category').value;
+        const message = document.getElementById('ticket-message').value;
+        
+        if (!subject || !category || !message) {
+            alert('Please fill in all fields');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/support/tickets', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    subject: subject,
+                    category: category,
+                    message: message
+                }),
+                credentials: 'include'
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                alert('✅ Ticket created successfully! Our support team will contact you soon.');
+                document.getElementById('newTicketModal').querySelector('.btn-close').click();
+                document.getElementById('new-ticket-form').reset();
+                loadTickets();
+            } else {
+                alert('❌ Error: ' + result.error);
+            }
+        } catch (error) {
+            console.error('Create ticket error:', error);
+            alert('❌ Network error occurred');
+        }
+    }
+    
+    function refreshTickets() {
+        loadTickets();
+    }
+    
+    // Обновление счетчика непрочитанных сообщений
+    async function updateUnreadCount() {
+        try {
+            const response = await fetch('/support/unread-count', {
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                updateSupportBadge(data.count);
+            }
+        } catch (error) {
+            console.error('Failed to update unread count:', error);
+        }
+    }
+    
+    function updateSupportBadge(count) {
+        let badge = document.getElementById('support-badge');
+        
+        if (count > 0) {
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'notification-badge';
+                badge.id = 'support-badge';
+                document.querySelector('.support-btn').appendChild(badge);
+            }
+            badge.textContent = count;
+        } else if (badge) {
+            badge.remove();
+        }
+    }
+    
+    // Инициализация
+    document.addEventListener('DOMContentLoaded', () => {
+        loadTickets();
+        
+        // Обновление каждые 30 секунд
+        setInterval(() => {
+            loadTickets();
+            updateUnreadCount();
+        }, 30000);
+        
+        // Проверка непрочитанных сообщений
+        updateUnreadCount();
+    });
+</script>
+{% endblock %}

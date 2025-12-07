@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to BeaversCasino{% endblock %}
+
+{% block content %}
+<div class="card text-center">
+    <h1>Welcome to BeaversCasino</h1>
+    <p class="lead">Experience the thrill of online gaming with fair play and instant payouts</p>
+    
+    {% if current_user.is_authenticated %}
+        <div class="user-welcome">
+            <h2>Hello, {{ current_user.username }}!</h2>
+            <div class="balance-display">
+                <h3>Your Balance: <span data-user-balance>${{ "%.2f"|format(current_user.balance) }}</span></h3>
+            </div>
+            <div class="action-buttons">
+                <a href="/games" class="btn btn-primary btn-lg">🎮 Play Games</a>
+                <a href="/payments/deposit" class="btn btn-success btn-lg">💰 Deposit</a>
+                <a href="/dashboard" class="btn btn-warning btn-lg">📊 Dashboard</a>
+            </div>
+        </div>
+    {% else %}
+        <div class="guest-welcome">
+            <h2>Join the Fun!</h2>
+            <p>Register now and get $10 welcome bonus</p>
+            <div class="action-buttons">
+                <a href="/auth/register" class="btn btn-primary btn-lg">🚀 Register Now</a>
+                <a href="/auth/login" class="btn btn-success btn-lg">🔑 Login</a>
+            </div>
+        </div>
+    {% endif %}
+    
+    <div class="features">
+        <div class="feature">
+            <h3>🎰 100+ Games</h3>
+            <p>Slots, roulette, blackjack and more</p>
+        </div>
+        <div class="feature">
+            <h3>⚡ Instant Payouts</h3>
+            <p>Get your winnings within minutes</p>
+        </div>
+        <div class="feature">
+            <h3>🔒 Secure & Fair</h3>
+            <p>Licensed and regulated gaming</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .user-welcome, .guest-welcome {
+        margin: 3rem 0;
+    }
+    
+    .balance-display {
+        background: rgba(255, 215, 0, 0.2);
+        padding: 1rem;
+        border-radius: 10px;
+        margin: 2rem auto;
+        max-width: 300px;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin: 2rem 0;
+        flex-wrap: wrap;
+    }
+    
+    .btn-lg {
+        padding: 1rem 2rem;
+        font-size: 1.25rem;
+    }
+    
+    .features {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-top: 3rem;
+        flex-wrap: wrap;
+    }
+    
+    .feature {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 1.5rem;
+        border-radius: 10px;
+        text-align: center;
+        min-width: 200px;
+    }
+    
+    .feature h3 {
+        color: #ffd700;
+        margin-bottom: 0.5rem;
+    }
+</style>
+{% endblock %}

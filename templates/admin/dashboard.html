@@ -1,0 +1,204 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Admin Dashboard - BeaversCasino{% endblock %}
+
+{% block page_title %}Dashboard Overview{% endblock %}
+
+{% block content %}
+<div class="dashboard-stats">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-value" id="total-users">0</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-value" id="new-users">0</div>
+                <div class="stat-label">New Users (30d)</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-value" id="active-users">0</div>
+                <div class="stat-label">Active Users</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-value" id="net-profit">$0</div>
+                <div class="stat-label">Net Profit</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="stat-card">
+                <div class="stat-value" id="total-deposits">$0</div>
+                <div class="stat-label">Total Deposits</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="stat-card">
+                <div class="stat-value" id="total-withdrawals">$0</div>
+                <div class="stat-label">Total Withdrawals</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="quick-actions mt-4">
+    <h3>Quick Actions</h3>
+    <div class="action-buttons">
+        <button class="btn btn-primary" onclick="window.location.href='/admin/users'">
+            👥 Manage Users
+        </button>
+        <button class="btn btn-success" onclick="window.location.href='/admin/games'">
+            🎮 Manage Games
+        </button>
+        <button class="btn btn-warning" onclick="exportReport()">
+            📈 Export Report
+        </button>
+        <button class="btn btn-info" onclick="window.location.href='/admin/audit'">
+            📝 View Audit Log
+        </button>
+    </div>
+</div>
+
+<div class="recent-activity mt-4">
+    <h3>Recent Activity</h3>
+    <div class="data-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody id="activity-list">
+                <tr>
+                    <td colspan="4" class="text-center">Loading...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .col-md-3, .col-md-6 {
+        flex: 1;
+        min-width: 200px;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .mt-4 {
+        margin-top: 2rem;
+    }
+</style>
+
+<script>
+    // Загрузка статистики
+    async function loadDashboardStats() {
+        try {
+            const response = await fetch('/admin/dashboard/stats', {
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                updateStats(data);
+            }
+        } catch (error) {
+            console.error('Failed to load dashboard stats:', error);
+        }
+    }
+    
+    function updateStats(data) {
+        if (data.users) {
+            document.getElementById('total-users').textContent = data.users.total;
+            document.getElementById('new-users').textContent = data.users.new;
+            document.getElementById('active-users').textContent = data.users.active;
+        }
+        
+        if (data.financial) {
+            document.getElementById('total-deposits').textContent = `$${data.financial.deposits.toFixed(2)}`;
+            document.getElementById('total-withdrawals').textContent = `$${data.financial.withdrawals.toFixed(2)}`;
+            document.getElementById('net-profit').textContent = `$${data.financial.net_profit.toFixed(2)}`;
+        }
+    }
+    
+    // Загрузка последних активностей
+    async function loadRecentActivity() {
+        try {
+            const response = await fetch('/admin/audit?per_page=10', {
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                displayActivity(data.logs);
+            }
+        } catch (error) {
+            console.error('Failed to load activity:', error);
+        }
+    }
+    
+    function displayActivity(logs) {
+        const container = document.getElementById('activity-list');
+        if (!container || !logs) return;
+        
+        if (logs.length === 0) {
+            container.innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center">No recent activity</td>
+                </tr>
+            `;
+            return;
+        }
+        
+        container.innerHTML = logs.map(log => `
+            <tr>
+                <td>${new Date(log.timestamp).toLocaleString()}</td>
+                <td>${log.actor_id || 'System'}</td>
+                <td><span class="badge badge-info">${log.action}</span></td>
+                <td>${log.description}</td>
+            </tr>
+        `).join('');
+    }
+    
+    function exportReport() {
+        const type = prompt('Enter report type (users/transactions):', 'users');
+        if (type) {
+            window.open(`/admin/reports/export?type=${type}`, '_blank');
+        }
+    }
+    
+    // Инициализация
+    document.addEventListener('DOMContentLoaded', () => {
+        loadDashboardStats();
+        loadRecentActivity();
+        
+        // Обновление каждые 30 секунд
+        setInterval(() => {
+            loadDashboardStats();
+            loadRecentActivity();
+        }, 30000);
+    });
+</script>
+{% endblock %}

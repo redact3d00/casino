@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Games - BeaversCasino{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/games.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>🎮 Available Games</h1>
+    <div id="games-container" class="games-grid">
+        <!-- Games will be loaded by JavaScript -->
+        <p>Loading games...</p>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <h2>🎲 Game History</h2>
+    <div id="game-history">
+        <!-- History will be loaded by JavaScript -->
+        <p>Loading game history...</p>
+    </div>
+</div>
+
+<style>
+    .mt-4 {
+        margin-top: 2rem;
+    }
+</style>
+{% endblock %}

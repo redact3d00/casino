@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Register - BeaversCasino{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 400px; margin: 0 auto;">
+    <h2>Create Account</h2>
+    
+    <form id="register-form" method="POST" action="/auth/register">
+        <div class="form-group">
+            <label for="reg-username" class="form-label">Username</label>
+            <input type="text" id="reg-username" name="username" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="reg-email" class="form-label">Email</label>
+            <input type="email" id="reg-email" name="email" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="reg-password" class="form-label">Password</label>
+            <input type="password" id="reg-password" name="password" class="form-control" required>
+            <small class="text-muted">Minimum 8 characters with uppercase, lowercase, number and special character</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="reg-confirm-password" class="form-label">Confirm Password</label>
+            <input type="password" id="reg-confirm-password" name="confirm_password" class="form-control" required>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Register</button>
+    </form>
+    
+    <div style="margin-top: 1.5rem; text-align: center;">
+        <p>Already have an account? <a href="/auth/login">Login here</a></p>
+    </div>
+</div>
+{% endblock %}

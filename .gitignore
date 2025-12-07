@@ -1,0 +1,10 @@
+venv/
+__pycache__/
+*.pyc
+.env
+casino.db
+logs/
+.flask_session/
+uploads/
+instance/
+.DS_Store
