@@ -1,5 +1,3 @@
-/* Стили для админ панели */
-
 .admin-container {
     display: flex;
     min-height: calc(100vh - 150px);

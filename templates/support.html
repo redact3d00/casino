@@ -125,7 +125,6 @@
     </div>
 </div>
 
-<!-- Modal для нового тикета -->
 <div class="modal fade" id="newTicketModal">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -258,7 +257,6 @@
 </style>
 
 <script>
-    // Загрузка тикетов
     async function loadTickets() {
         try {
             const response = await fetch('/support/tickets', {
@@ -334,7 +332,6 @@
         const openTickets = tickets.filter(t => t.status === 'open').length;
         document.getElementById('open-tickets-count').textContent = openTickets;
         
-        // Простая логика для среднего времени ответа
         const avgResponseTime = '2 hours';
         document.getElementById('avg-response-time').textContent = avgResponseTime;
     }
@@ -350,7 +347,6 @@
         return date.toLocaleDateString();
     }
     
-    // Фильтрация тикетов
     function filterTickets(category) {
         const tickets = document.querySelectorAll('.ticket-item');
         tickets.forEach(ticket => {
@@ -363,7 +359,6 @@
         });
     }
     
-    // Поиск тикетов
     function searchTickets() {
         const query = document.getElementById('ticket-search').value.toLowerCase();
         if (!query) {
@@ -383,12 +378,10 @@
         });
     }
     
-    // Просмотр тикета
     function viewTicket(ticketId) {
         window.location.href = `/support/ticket/${ticketId}`;
     }
     
-    // Создание нового тикета
     function showNewTicketModal() {
         const modal = new bootstrap.Modal(document.getElementById('newTicketModal'));
         modal.show();
@@ -421,16 +414,16 @@
             const result = await response.json();
             
             if (response.ok) {
-                alert('✅ Ticket created successfully! Our support team will contact you soon.');
+                alert('Ticket created successfully! Our support team will contact you soon.');
                 document.getElementById('newTicketModal').querySelector('.btn-close').click();
                 document.getElementById('new-ticket-form').reset();
                 loadTickets();
             } else {
-                alert('❌ Error: ' + result.error);
+                alert('Error: ' + result.error);
             }
         } catch (error) {
             console.error('Create ticket error:', error);
-            alert('❌ Network error occurred');
+            alert('Network error occurred');
         }
     }
     
@@ -438,7 +431,6 @@
         loadTickets();
     }
     
-    // Обновление счетчика непрочитанных сообщений
     async function updateUnreadCount() {
         try {
             const response = await fetch('/support/unread-count', {
@@ -470,17 +462,14 @@
         }
     }
     
-    // Инициализация
     document.addEventListener('DOMContentLoaded', () => {
         loadTickets();
         
-        // Обновление каждые 30 секунд
         setInterval(() => {
             loadTickets();
             updateUnreadCount();
         }, 30000);
         
-        // Проверка непрочитанных сообщений
         updateUnreadCount();
     });
 </script>

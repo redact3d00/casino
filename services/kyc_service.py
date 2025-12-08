@@ -6,8 +6,6 @@ class KYCService:
     @staticmethod
     def submit_document(user_id, document_type, document_number, 
                        front_image_path, back_image_path, selfie_image_path):
-        """Отправка KYC документа"""
-        # Проверяем, нет ли уже ожидающей заявки
         pending_doc = KYCDocument.query.filter_by(
             user_id=user_id,
             status=KYCStatus.PENDING
@@ -19,7 +17,6 @@ class KYCService:
                 'error': 'You already have a pending KYC submission'
             }
         
-        # Создаем документ
         document = KYCDocument(
             user_id=user_id,
             document_type=document_type,
@@ -33,7 +30,6 @@ class KYCService:
         
         db.session.add(document)
         
-        # Обновляем статус пользователя
         user = User.query.get(user_id)
         user.kyc_status = KYCStatus.PENDING
         user.kyc_verified = False
@@ -47,7 +43,6 @@ class KYCService:
     
     @staticmethod
     def verify_document(document_id, admin_id, approved=True, notes=''):
-        """Верификация KYC документа"""
         document = KYCDocument.query.get(document_id)
         if not document:
             return {'success': False, 'error': 'Document not found'}
@@ -57,12 +52,26 @@ class KYCService:
             document.verified_at = datetime.utcnow()
             document.verified_by = admin_id
             
-            # Обновляем пользователя
             document.user.kyc_verified = True
             document.user.kyc_status = KYCStatus.VERIFIED
+            
+            bonus_amount = 10.00
+            document.user.balance += bonus_amount
+            
+            from models import Transaction, TransactionType
+            transaction = Transaction(
+                user_id=document.user.id,
+                type=TransactionType.BONUS,
+                amount=bonus_amount,
+                description='KYC verification bonus',
+                timestamp=datetime.now(),
+                status='completed'
+            )
+            db.session.add(transaction)
+            
         else:
             document.status = KYCStatus.REJECTED
-            document.verified_at = datetime.utcnow()
+            document.verified_at = datetime.now()
             document.verified_by = admin_id
             document.rejection_reason = notes
             
@@ -79,7 +88,6 @@ class KYCService:
     
     @staticmethod
     def get_user_documents(user_id):
-        """Получение документов пользователя"""
         documents = KYCDocument.query.filter_by(user_id=user_id)\
             .order_by(KYCDocument.submitted_at.desc())\
             .all()
@@ -91,21 +99,19 @@ class KYCService:
             'status': doc.status.value,
             'submitted_at': doc.submitted_at.isoformat(),
             'verified_at': doc.verified_at.isoformat() if doc.verified_at else None,
+            'verified_by': doc.verified_by,
             'rejection_reason': doc.rejection_reason
         } for doc in documents]
     
     @staticmethod
     def check_kyc_required(user_id, deposit_amount):
-        """Проверка, требуется ли KYC для депозита"""
         user = User.query.get(user_id)
         if not user:
-            return True  # На всякий случай требуем KYC
+            return True
         
-        # Если пользователь уже верифицирован
         if user.kyc_verified:
             return False
         
-        # Суммарные депозиты пользователя
         from models import Transaction
         total_deposits = db.session.query(
             db.func.sum(Transaction.amount)
@@ -115,11 +121,13 @@ class KYCService:
             Transaction.status == 'completed'
         ).scalar() or 0
         
-        # Порог для KYC (например, $1000)
         KYC_THRESHOLD = 1000.00
         
-        # Если суммарные депозиты + текущий депозит превышают порог
         if total_deposits + deposit_amount >= KYC_THRESHOLD:
             return True
         
         return False
+    
+    @staticmethod
+    def get_pending_count():
+        return KYCDocument.query.filter_by(status=KYCStatus.PENDING).count()

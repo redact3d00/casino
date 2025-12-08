@@ -1,5 +1,3 @@
-// JavaScript для аутентификации
-
 class AuthManager {
     constructor() {
         this.init();
@@ -21,27 +19,24 @@ class AuthManager {
             const password = document.getElementById('password').value;
             
             try {
-                const response = await fetch('/auth/login', {
+                const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ username, password }),
-                    credentials: 'include'  // Важно для cookies/sessions
+                    credentials: 'include' 
                 });
                 
                 const result = await response.json();
                 
                 if (response.ok) {
-                    // Показываем успешное сообщение
                     this.showAlert('Login successful! Redirecting...', 'success');
                     
-                    // Редирект через секунду
                     setTimeout(() => {
                         window.location.href = result.redirect || '/dashboard';
                     }, 1000);
                 } else {
-                    // Показываем ошибку
                     this.showAlert(result.error || 'Login failed', 'error');
                 }
             } catch (error) {
@@ -63,7 +58,6 @@ class AuthManager {
             const password = document.getElementById('reg-password').value;
             const confirmPassword = document.getElementById('reg-confirm-password').value;
             
-            // Валидация пароля
             if (password !== confirmPassword) {
                 this.showAlert('Passwords do not match', 'error');
                 return;
@@ -74,7 +68,6 @@ class AuthManager {
                 return;
             }
             
-            // Проверка сложности пароля
             const hasUpperCase = /[A-Z]/.test(password);
             const hasLowerCase = /[a-z]/.test(password);
             const hasNumbers = /\d/.test(password);
@@ -86,7 +79,7 @@ class AuthManager {
             }
             
             try {
-                const response = await fetch('/auth/register', {
+                const response = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -114,13 +107,11 @@ class AuthManager {
     }
     
     showAlert(message, type = 'info') {
-        // Создаем алерт если casinoApp не доступен
         if (window.casinoApp && window.casinoApp.showAlert) {
             window.casinoApp.showAlert(message, type);
             return;
         }
         
-        // Создаем простой алерт
         const alert = document.createElement('div');
         alert.className = `alert alert-${type}`;
         alert.textContent = message;
@@ -141,7 +132,6 @@ class AuthManager {
     }
 }
 
-// Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
     window.authManager = new AuthManager();
 });

@@ -5,11 +5,11 @@ import enum
 
 db = SQLAlchemy()
 
-# ========== ПЕРЕЧИСЛЕНИЯ ==========
 class UserRole(enum.Enum):
     PLAYER = 'player'
     ADMIN = 'admin'
     MODERATOR = 'moderator'
+    SUPPORT = 'support'
 
 class UserStatus(enum.Enum):
     ACTIVE = 'active'
@@ -54,7 +54,6 @@ class KYCStatus(enum.Enum):
     REJECTED = 'rejected'
     UNDER_REVIEW = 'under_review'
 
-# ========== МОДЕЛИ ==========
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
     
@@ -65,9 +64,9 @@ class User(db.Model, UserMixin):
     role = db.Column(db.Enum(UserRole), default=UserRole.PLAYER, nullable=False)
     balance = db.Column(db.Float, default=0.00, nullable=False)
     status = db.Column(db.Enum(UserStatus), default=UserStatus.VERIFICATION, nullable=False)
-    registered_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    registered_at = db.Column(db.DateTime, default=datetime.now, nullable=False)
     loyalty_level = db.Column(db.String(20), default='standard')
-    bet_limit = db.Column(db.Float)
+    bet_limit = db.Column(db.Float, default=1000.00)
     time_limit = db.Column(db.Integer)
     kyc_verified = db.Column(db.Boolean, default=False)
     kyc_status = db.Column(db.Enum(KYCStatus), default=KYCStatus.PENDING)
@@ -87,15 +86,46 @@ class User(db.Model, UserMixin):
     cool_off_period = db.Column(db.Integer, default=0)
     self_excluded_until = db.Column(db.DateTime)
     
-    # Связи
+    # Relationships
     sessions = db.relationship('Session', backref='user', lazy=True, cascade='all, delete-orphan')
     bets = db.relationship('Bet', backref='user', lazy=True, cascade='all, delete-orphan')
     transactions = db.relationship('Transaction', backref='user', lazy=True, cascade='all, delete-orphan')
     payouts = db.relationship('Payout', backref='user', lazy=True, cascade='all, delete-orphan')
     bonuses = db.relationship('Bonus', backref='user', lazy=True, cascade='all, delete-orphan')
-    kyc_documents = db.relationship('KYCDocument', backref='user', lazy=True, cascade='all, delete-orphan')
-    support_tickets = db.relationship('SupportTicket', foreign_keys='SupportTicket.user_id', backref='user', lazy=True)
-    assigned_tickets = db.relationship('SupportTicket', foreign_keys='SupportTicket.admin_id', backref='admin', lazy=True)
+    
+    # KYC documents submitted by this user
+    kyc_documents = db.relationship('KYCDocument', 
+                                    foreign_keys='KYCDocument.user_id',
+                                    backref='user_doc', 
+                                    lazy=True, 
+                                    cascade='all, delete-orphan')
+    
+    # KYC documents verified by this user (as admin)
+    verified_documents = db.relationship('KYCDocument',
+                                         foreign_keys='KYCDocument.verified_by',
+                                         backref='verifier_user',
+                                         lazy=True)
+    
+    # Support tickets created by this user
+    support_tickets = db.relationship('SupportTicket', 
+                                     foreign_keys='SupportTicket.user_id', 
+                                     backref='created_by', 
+                                     lazy=True)
+    
+    # Support tickets assigned to this user (as admin/support)
+    assigned_tickets = db.relationship('SupportTicket', 
+                                      foreign_keys='SupportTicket.admin_id', 
+                                      backref='assigned_to', 
+                                      lazy=True)
+    
+    # Audit logs created by this user
+    audit_logs = db.relationship('AuditLog',
+                                foreign_keys='AuditLog.actor_id',
+                                backref='actor_user',
+                                lazy=True)
+    
+    def get_id(self):
+        return str(self.id)
     
     def __repr__(self):
         return f'<User {self.username}>'
@@ -112,11 +142,13 @@ class Game(db.Model):
     rtp = db.Column(db.Float, nullable=False)
     active = db.Column(db.Boolean, default=True)
     maintenance = db.Column(db.Boolean, default=False)
-    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+    added_at = db.Column(db.DateTime, default=datetime.now)
     provider = db.Column(db.String(100))
     volatility = db.Column(db.String(20))
     image_url = db.Column(db.String(200))
     popularity = db.Column(db.Integer, default=0)
+    has_bonus = db.Column(db.Boolean, default=False)
+    jackpot = db.Column(db.Float, default=0.00)
     
     bets = db.relationship('Bet', backref='game', lazy=True, cascade='all, delete-orphan')
     
@@ -133,8 +165,8 @@ class Bet(db.Model):
     multiplier = db.Column(db.Float)
     result = db.Column(db.String(20))
     win_amount = db.Column(db.Float, default=0.00)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    game_data = db.Column(db.Text)  # JSON как текст для SQLite
+    timestamp = db.Column(db.DateTime, default=datetime.now)
+    game_data = db.Column(db.Text) 
     ip_address = db.Column(db.String(45))
     
     def __repr__(self):
@@ -150,7 +182,7 @@ class Transaction(db.Model):
     balance_before = db.Column(db.Float)
     balance_after = db.Column(db.Float)
     status = db.Column(db.String(20), default='completed')
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
     reference = db.Column(db.String(100), unique=True)
     description = db.Column(db.Text)
     
@@ -165,9 +197,9 @@ class Payout(db.Model):
     amount = db.Column(db.Float, nullable=False)
     method = db.Column(db.String(50), nullable=False)
     status = db.Column(db.Enum(PayoutStatus), default=PayoutStatus.PENDING)
-    request_date = db.Column(db.DateTime, default=datetime.utcnow)
+    request_date = db.Column(db.DateTime, default=datetime.now)
     processed_date = db.Column(db.DateTime)
-    account_details = db.Column(db.Text)  # JSON как текст
+    account_details = db.Column(db.Text) 
     fee = db.Column(db.Float, default=0.00)
     admin_notes = db.Column(db.Text)
     
@@ -183,7 +215,7 @@ class Bonus(db.Model):
     amount = db.Column(db.Float)
     spins = db.Column(db.Integer)
     wager_requirement = db.Column(db.Float)
-    activated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    activated_at = db.Column(db.DateTime, default=datetime.now)
     expires_at = db.Column(db.DateTime)
     status = db.Column(db.Enum(BonusStatus), default=BonusStatus.ACTIVE)
     wagered_amount = db.Column(db.Float, default=0.00)
@@ -199,7 +231,7 @@ class Session(db.Model):
     ip_address = db.Column(db.String(45), nullable=False)
     device = db.Column(db.String(200))
     browser = db.Column(db.String(100))
-    login_time = db.Column(db.DateTime, default=datetime.utcnow)
+    login_time = db.Column(db.DateTime, default=datetime.now)
     logout_time = db.Column(db.DateTime)
     active = db.Column(db.Boolean, default=True)
     token = db.Column(db.String(500))
@@ -215,35 +247,33 @@ class AuditLog(db.Model):
     actor_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     action = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=datetime.now)
     ip_address = db.Column(db.String(45))
     user_agent = db.Column(db.Text)
-    changed_data = db.Column(db.Text)  # JSON как текст
+    changed_data = db.Column(db.Text)
     
     actor = db.relationship('User', foreign_keys=[actor_id])
     
     def __repr__(self):
         return f'<AuditLog {self.id} {self.action}>'
 
-# ========== НОВЫЕ МОДЕЛИ ==========
-
 class KYCDocument(db.Model):
     __tablename__ = 'kyc_documents'
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    document_type = db.Column(db.String(50), nullable=False)  # passport, id_card, driver_license, utility_bill
+    document_type = db.Column(db.String(50), nullable=False)
     document_number = db.Column(db.String(100))
-    front_image = db.Column(db.String(200))  # путь к файлу
+    front_image = db.Column(db.String(200))
     back_image = db.Column(db.String(200))
     selfie_image = db.Column(db.String(200))
     status = db.Column(db.Enum(KYCStatus), default=KYCStatus.PENDING)
-    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    submitted_at = db.Column(db.DateTime, default=datetime.now)
     verified_at = db.Column(db.DateTime)
     verified_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     rejection_reason = db.Column(db.Text)
     
-    verifier = db.relationship('User', foreign_keys=[verified_by])
+    # Relationships are defined in User model
     
     def __repr__(self):
         return f'<KYCDocument {self.id} {self.document_type}>'
@@ -257,15 +287,16 @@ class SupportTicket(db.Model):
     message = db.Column(db.Text, nullable=False)
     status = db.Column(db.Enum(TicketStatus), default=TicketStatus.OPEN)
     priority = db.Column(db.Enum(TicketPriority), default=TicketPriority.MEDIUM)
-    category = db.Column(db.String(50))  # deposit, withdrawal, technical, account, game
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    category = db.Column(db.String(50))
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     closed_at = db.Column(db.DateTime)
-    admin_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # кто закрыл
+    admin_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     last_reply_by = db.Column(db.Enum(UserRole))
     
-    # Связи
     messages = db.relationship('SupportMessage', backref='ticket', lazy=True, cascade='all, delete-orphan')
+    
+    # Relationships are defined in User model
     
     def __repr__(self):
         return f'<SupportTicket {self.id} {self.subject}>'
@@ -292,7 +323,7 @@ class Announcement(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    type = db.Column(db.String(50))  # info, warning, success, maintenance
+    type = db.Column(db.String(50))
     active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     expires_at = db.Column(db.DateTime)

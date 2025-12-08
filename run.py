@@ -1,57 +1,79 @@
 from app import app
 import os
-from models import db, User, Game, UserRole, UserStatus
-from flask_bcrypt import generate_password_hash
+from models import db, User, Game, UserRole, UserStatus, KYCStatus
+from werkzeug.security import generate_password_hash
 from datetime import datetime
 
 def create_default_data():
     with app.app_context():
-        # Создаем таблицы, если они не существуют
+        db.drop_all()
         db.create_all()
         
         try:
-            # Проверяем и создаем администратора
             admin = User.query.filter_by(username='admin').first()
             if not admin:
-                # Проверяем, не занят ли email
-                existing_email = User.query.filter_by(email='admin@casino.local').first()
-                if existing_email:
-                    # Если email занят, используем уникальный
-                    admin_email = f'admin_{int(datetime.now().timestamp())}@casino.local'
-                    print(f"⚠️  Original admin email already exists. Using: {admin_email}")
-                else:
-                    admin_email = 'admin@casino.local'
-                
                 admin = User(
                     username='admin',
-                    email=admin_email,
-                    password_hash=generate_password_hash('Admin123!').decode('utf-8'),
+                    email='admin@casino.local',
+                    password_hash=generate_password_hash('Admin123!'),
                     role=UserRole.ADMIN,
                     status=UserStatus.ACTIVE,
                     kyc_verified=True,
+                    kyc_status=KYCStatus.VERIFIED,
                     balance=10000.00,
-                    registered_at=datetime.utcnow()
+                    registered_at=datetime.now()
                 )
                 db.session.add(admin)
-                print("✅ Admin user created")
+                print("Admin user created")
             
-            # Проверяем и создаем тестового игрока
             player = User.query.filter_by(username='testplayer').first()
             if not player:
                 player = User(
                     username='testplayer',
                     email='player@casino.local',
-                    password_hash=generate_password_hash('Test123!').decode('utf-8'),
+                    password_hash=generate_password_hash('Test123!'),
                     role=UserRole.PLAYER,
                     status=UserStatus.ACTIVE,
                     kyc_verified=True,
+                    kyc_status=KYCStatus.VERIFIED,
                     balance=1000.00,
-                    registered_at=datetime.utcnow()
+                    registered_at=datetime.now()
                 )
                 db.session.add(player)
                 print("✅ Test player created")
             
-            # Проверяем и создаем игры
+            support = User.query.filter_by(username='support').first()
+            if not support:
+                support = User(
+                    username='support',
+                    email='support@casino.local',
+                    password_hash=generate_password_hash('Support123!'),
+                    role=UserRole.SUPPORT,
+                    status=UserStatus.ACTIVE,
+                    kyc_verified=True,
+                    kyc_status=KYCStatus.VERIFIED,
+                    balance=0.00,
+                    registered_at=datetime.now()
+                )
+                db.session.add(support)
+                print("Support user created")
+            
+            moderator = User.query.filter_by(username='moderator').first()
+            if not moderator:
+                moderator = User(
+                    username='moderator',
+                    email='moderator@casino.local',
+                    password_hash=generate_password_hash('Moderator123!'),
+                    role=UserRole.MODERATOR,
+                    status=UserStatus.ACTIVE,
+                    kyc_verified=True,
+                    kyc_status=KYCStatus.VERIFIED,
+                    balance=0.00,
+                    registered_at=datetime.now()
+                )
+                db.session.add(moderator)
+                print("Moderator user created")
+            
             if Game.query.count() == 0:
                 games = [
                     Game(
@@ -89,57 +111,32 @@ def create_default_data():
                 for game in games:
                     db.session.add(game)
                 
-                print("✅ Games created")
+                print("Games created")
             
             db.session.commit()
-            print("✅ Default data verified successfully")
+            print("Default data created successfully")
             
         except Exception as e:
             db.session.rollback()
-            print(f"❌ Error creating default data: {e}")
+            print(f"Error creating default data: {e}")
 
 if __name__ == '__main__':
-    # Создаем необходимые директории
-    directories = ['logs', 'uploads/kyc', 'uploads/avatars', '.flask_session', 'templates', 'templates/admin']
+    directories = ['logs', 'uploads/kyc', 'uploads/avatars', '.flask_session']
     
     for directory in directories:
         os.makedirs(directory, exist_ok=True)
-        print(f"📁 Created directory: {directory}")
-    
-    if not os.path.exists('templates/games.html'):
-        with open('templates/games.html', 'w') as f:
-            f.write("""<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Games - BeaversCasino</title>
-</head>
-<body>
-    <h1>🎮 Available Games</h1>
-    <div id="games-container" class="games-grid">
-        <!-- Games will be loaded by JavaScript -->
-    </div>
-    
-    <h2>🎲 Game History</h2>
-    <div id="game-history">
-        <!-- History will be loaded by JavaScript -->
-    </div>
-    
-    <script src="/static/js/main.js"></script>
-    <script src="/static/js/games.js"></script>
-</body>
-</html>""")
-        print("📄 Created games.html template")
+        print(f"Created directory: {directory}")
     
     create_default_data()
     
-    print("\n🚀 Starting Casino application...")
-    print(f"🔧 Debug mode: {app.config['DEBUG']}")
-    print(f"💾 Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
-    print(f"🌐 Server: http://localhost:5000")
-    print(f"🔑 Admin login: admin / Admin123!")
-    print(f"👤 Test player: testplayer / Test123!")
+    print("\nStarting Casino application...")
+    print(f"Debug mode: {app.config['DEBUG']}")
+    print(f"Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
+    print(f"Server: http://localhost:5000")
+    print(f"Admin login: admin / Admin123!")
+    print(f"Support login: support / Support123!")
+    print(f"Moderator login: moderator / Moderator123!")
+    print(f"Test player: testplayer / Test123!")
     print("-" * 50)
     
     app.run(

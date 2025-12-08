@@ -1,188 +1,167 @@
-from flask import Flask, render_template, jsonify, request, send_from_directory
-from flask_login import LoginManager, current_user, login_required
-from flask_bcrypt import Bcrypt
-from flask_wtf.csrf import CSRFProtect, generate_csrf
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
-from flask_migrate import Migrate
-from config import Config
-import logging
 import os
-from datetime import datetime
-
-# Импорт моделей
-from models import db, User, UserRole
-
-# Инициализация расширений
-bcrypt = Bcrypt()
-csrf = CSRFProtect()
-login_manager = LoginManager()
-limiter = Limiter(key_func=get_remote_address)
-migrate = Migrate()
+from flask import Flask, send_from_directory, jsonify, render_template, request, redirect, url_for
+from flask_cors import CORS
+from flask_login import LoginManager, current_user, login_required
+from flask_migrate import Migrate
+from models import db, User
+from config import Config
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder='static', template_folder='templates')
     app.config.from_object(Config)
     
-    # Инициализация расширений
+    CORS(app, supports_credentials=True)
     db.init_app(app)
-    bcrypt.init_app(app)
-    csrf.init_app(app)
-    login_manager.init_app(app)
-    limiter.init_app(app)
-    migrate.init_app(app, db)
     
-    # Настройка Flask-Login
-    login_manager.login_view = 'auth.show_login_form'
-    login_manager.session_protection = "strong"
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+    login_manager.login_view = 'login_page'
+    
+    migrate = Migrate(app, db)
     
     @login_manager.user_loader
     def load_user(user_id):
-        return User.query.get(int(user_id))
+        try:
+            return User.query.get(int(user_id))
+        except:
+            return None
     
-    @login_manager.unauthorized_handler
-    def unauthorized():
-        if request.path.startswith('/api/') or request.path.startswith('/auth/') or request.path.startswith('/admin/'):
-            return jsonify({'error': 'Unauthorized'}), 401
-        return render_template('login.html')
-    
-    # Импорт и регистрация Blueprints
     from routes.auth import auth_bp
-    from routes.admin import admin_bp
     from routes.games import games_bp
-    from routes.user import user_bp
+    from routes.admin import admin_bp
     from routes.payments import payments_bp
     from routes.support import support_bp
-
-    # Отключите CSRF для API endpoints
-    csrf.exempt(auth_bp)
-    csrf.exempt(admin_bp)
-    csrf.exempt(games_bp)
-    csrf.exempt(user_bp)
-    csrf.exempt(payments_bp)
+    from routes.user import user_bp
     
-    app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(admin_bp, url_prefix='/admin')
-    app.register_blueprint(games_bp, url_prefix='/games')
-    app.register_blueprint(user_bp, url_prefix='/user')
-    app.register_blueprint(payments_bp, url_prefix='/payments')
-    app.register_blueprint(support_bp, url_prefix='/support')
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(games_bp, url_prefix='/api/games')
+    app.register_blueprint(admin_bp, url_prefix='/api/admin')
+    app.register_blueprint(payments_bp, url_prefix='/api/payments')
+    app.register_blueprint(support_bp, url_prefix='/api/support')
+    app.register_blueprint(user_bp, url_prefix='/api/user')
     
-    # HTML маршруты (с CSRF)
     @app.route('/')
     def index():
         return render_template('index.html')
-    
-    @app.route('/dashboard')
-    @login_required
-    def dashboard():
-        return render_template('dashboard.html')
     
     @app.route('/games')
     @login_required
     def games_page():
         return render_template('games.html')
     
+    @app.route('/dashboard')
+    @login_required
+    def dashboard():
+        return render_template('dashboard.html')
+    
     @app.route('/admin')
     @login_required
-    def admin_panel():
-        if current_user.role != UserRole.ADMIN:
-            return jsonify({'error': 'Access denied'}), 403
+    def admin_dashboard():
+        if current_user.role.value not in ['admin', 'moderator', 'support']:
+            return redirect(url_for('index'))
         return render_template('admin/dashboard.html')
     
-    @app.route('/api/health')
+    @app.route('/admin/support-dashboard')
+    @login_required
+    def support_dashboard_page():
+        if current_user.role.value not in ['admin', 'moderator', 'support']:
+            return redirect(url_for('index'))
+        return render_template('admin/support_dashboard.html')
+    
+    @app.route('/admin/users')
+    @login_required
+    def admin_users():
+        if current_user.role.value not in ['admin', 'moderator']:
+            return redirect(url_for('index'))
+        return render_template('admin/users.html')
+    
+    @app.route('/admin/create-staff')
+    @login_required
+    def admin_create_staff():
+        if current_user.role.value != 'admin':
+            return redirect(url_for('index'))
+        return render_template('admin/create-staff.html')
+    
+    @app.route('/login')
+    def login_page():
+        if current_user.is_authenticated:
+            return redirect(url_for('dashboard'))
+        return render_template('login.html')
+    
+    @app.route('/register')
+    def register_page():
+        if current_user.is_authenticated:
+            return redirect(url_for('dashboard'))
+        return render_template('register.html')
+    
+    @app.route('/support')
+    @login_required
+    def support_page():
+        return render_template('support.html')
+    
+    @app.route('/static/<path:filename>')
+    def static_files(filename):
+        return send_from_directory('static', filename)
+    
+    @app.route('/health')
     def health_check():
-        return jsonify({
-            'status': 'healthy',
-            'timestamp': datetime.now().isoformat(),
-            'version': '1.0.0'
-        })
+        return jsonify({'status': 'ok', 'service': 'casino'})
     
-    @app.route('/api/csrf-token', methods=['GET'])
-    def get_csrf_token():
-        token = generate_csrf()
-        return jsonify({'csrf_token': token})
+    @app.route('/api/auth/status')
+    def auth_status():
+        if current_user.is_authenticated:
+            return jsonify({
+                'authenticated': True,
+                'user': {
+                    'id': current_user.id,
+                    'username': current_user.username,
+                    'role': current_user.role.value,
+                    'balance': current_user.balance
+                }
+            })
+        return jsonify({'authenticated': False})
     
-    # Для отладки - просмотр пользователей
-    @app.route('/debug/users')
-    @login_required
-    def debug_users():
-        users = User.query.all()
-        return jsonify({
-            'users': [{
-                'id': u.id,
-                'username': u.username,
-                'email': u.email,
-                'role': u.role.value,
-                'status': u.status.value,
-                'balance': u.balance
-            } for u in users]
-        })
-    
-    @app.route('/uploads/kyc/<filename>')
-    @login_required
-    def serve_kyc_file(filename):
-        """Сервинг KYC файлов (с проверкой доступа)"""
-        # В реальном приложении нужно проверять, что пользователь имеет доступ к файлу
-        return send_from_directory('uploads/kyc', filename)
-
-    # Обработка ошибок
     @app.errorhandler(404)
-    def not_found_error(error):
-        if request.path.startswith('/api/'):
-            return jsonify({'error': 'Not found'}), 404
+    def not_found(error):
         return render_template('404.html'), 404
     
-    @app.errorhandler(405)
-    def method_not_allowed(error):
+    @app.errorhandler(401)
+    def unauthorized(error):
         if request.path.startswith('/api/'):
-            return jsonify({'error': 'Method not allowed'}), 405
-        return render_template('405.html'), 405
+            return jsonify({'error': 'Unauthorized'}), 401
+        return redirect(url_for('login_page'))
+    
+    @app.errorhandler(403)
+    def forbidden(error):
+        if request.path.startswith('/api/'):
+            return jsonify({'error': 'Forbidden'}), 403
+        return render_template('403.html'), 403
     
     @app.errorhandler(500)
     def internal_error(error):
-        db.session.rollback()
-        app.logger.error(f'Server error: {error}')
         if request.path.startswith('/api/'):
             return jsonify({'error': 'Internal server error'}), 500
         return render_template('500.html'), 500
     
-    # Middleware для безопасности
-    @app.after_request
-    def add_security_headers(response):
-        response.headers['X-Content-Type-Options'] = 'nosniff'
-        response.headers['X-Frame-Options'] = 'DENY'
-        response.headers['X-XSS-Protection'] = '1; mode=block'
-        if 'Cache-Control' not in response.headers:
-            response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-        return response
-    
-    # Настройка логирования
-    setup_logging(app)
+    @app.context_processor
+    def inject_user():
+        return dict(current_user=current_user)
     
     return app
-
-def setup_logging(app):
-    if not app.debug:
-        import logging
-        from logging.handlers import RotatingFileHandler
-        
-        if not os.path.exists('logs'):
-            os.mkdir('logs')
-        
-        file_handler = RotatingFileHandler(
-            'logs/casino.log',
-            maxBytes=10240,
-            backupCount=10
-        )
-        file_handler.setFormatter(logging.Formatter(
-            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-        ))
-        file_handler.setLevel(logging.INFO)
-        app.logger.addHandler(file_handler)
-        app.logger.setLevel(logging.INFO)
 
 app = create_app()
 
 if __name__ == '__main__':
-    app.run(debug=app.config['DEBUG'])
+    with app.app_context():
+        db.create_all()
+        print("✅ Database tables created")
+    
+    print("Casino Server starting...")
+    print(f"http://localhost:5000")
+    print("-" * 50)
+    
+    app.run(
+        host='0.0.0.0',
+        port=5000,
+        debug=True
+    )

@@ -7,14 +7,12 @@ games_bp = Blueprint('games', __name__)
 @games_bp.route('/available', methods=['GET'])
 @login_required
 def get_available_games():
-    """Получение доступных игр"""
     games = GameService.get_available_games()
     return jsonify({'games': games})
 
 @games_bp.route('/<int:game_id>/play', methods=['POST'])
 @login_required
 def play_game(game_id):
-    """Игра в выбранную игру"""
     data = request.get_json()
     bet_amount = float(data.get('amount', 0))
     
@@ -31,7 +29,6 @@ def play_game(game_id):
 @games_bp.route('/history', methods=['GET'])
 @login_required
 def get_game_history():
-    """История игр пользователя"""
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     

@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}BeaversCasino{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block extra_css %}{% endblock %}
@@ -26,8 +25,8 @@
                     </span>
                     <a href="#" class="nav-link logout" data-logout>Logout</a>
                 {% else %}
-                    <a href="/auth/login" class="nav-link">Login</a>
-                    <a href="/auth/register" class="nav-link register">Register</a>
+                    <a href="/login" class="nav-link">Login</a>
+                    <a href="/register" class="nav-link register">Register</a>
                 {% endif %}
             </div>
         </div>
@@ -49,7 +48,7 @@
 
     <footer class="footer">
         <div class="container">
-            <p>© 2025 BeaversCasino. For entertainment purposes only. 18+</p>
+            <p>© 2025 BeaversCasino. Лудомания это плохо. 18+</p>
             <p>
                 <a href="/responsible-gaming">Responsible Gaming</a> | 
                 <a href="/terms">Terms & Conditions</a> | 

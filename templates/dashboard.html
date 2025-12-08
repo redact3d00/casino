@@ -13,14 +13,12 @@
             <div class="card">
                 <h2>🎮 Available Games</h2>
                 <div id="games-container" class="games-grid">
-                    <!-- Games will be loaded by JavaScript -->
                 </div>
             </div>
             
             <div class="card">
                 <h2>📊 Recent Activity</h2>
                 <div id="game-history">
-                    <!-- Game history will be loaded by JavaScript -->
                 </div>
             </div>
         </div>
@@ -115,7 +113,6 @@
 </style>
 
 <script>
-    // Загрузка статистики пользователя
     async function loadUserStats() {
         try {
             const response = await fetch('/user/profile', {
@@ -124,14 +121,12 @@
             
             if (response.ok) {
                 const data = await response.json();
-                // Можно добавить дополнительную статистику
             }
         } catch (error) {
             console.error('Failed to load user stats:', error);
         }
     }
     
-    // Загрузка бонусов
     async function loadBonuses() {
         try {
             const response = await fetch('/user/bonuses', {

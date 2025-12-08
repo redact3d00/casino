@@ -6,7 +6,6 @@ class AdminService:
     
     @staticmethod
     def get_user_total_deposits(user_id):
-        """Общая сумма депозитов пользователя"""
         result = db.session.query(func.sum(Transaction.amount)).filter(
             Transaction.user_id == user_id,
             Transaction.type == 'deposit',
@@ -16,7 +15,6 @@ class AdminService:
     
     @staticmethod
     def get_user_total_withdrawals(user_id):
-        """Общая сумма выводов пользователя"""
         result = db.session.query(func.sum(Payout.amount)).filter(
             Payout.user_id == user_id,
             Payout.status.in_(['completed', 'processing'])
@@ -25,7 +23,6 @@ class AdminService:
     
     @staticmethod
     def get_user_total_bets(user_id):
-        """Общая сумма ставок пользователя"""
         result = db.session.query(func.sum(Bet.amount)).filter(
             Bet.user_id == user_id
         ).scalar()
@@ -33,7 +30,6 @@ class AdminService:
     
     @staticmethod
     def get_user_total_wins(user_id):
-        """Общая сумма выигрышей пользователя"""
         result = db.session.query(func.sum(Bet.win_amount)).filter(
             Bet.user_id == user_id,
             Bet.result == 'win'
@@ -42,7 +38,6 @@ class AdminService:
     
     @staticmethod
     def get_game_total_bets(game_id):
-        """Общая сумма ставок на игру"""
         result = db.session.query(func.sum(Bet.amount)).filter(
             Bet.game_id == game_id
         ).scalar()
@@ -50,7 +45,6 @@ class AdminService:
     
     @staticmethod
     def get_game_total_wins(game_id):
-        """Общая сумма выигрышей на игре"""
         result = db.session.query(func.sum(Bet.win_amount)).filter(
             Bet.game_id == game_id,
             Bet.result == 'win'
@@ -59,17 +53,14 @@ class AdminService:
     
     @staticmethod
     def get_chart_data(days=30):
-        """Данные для графиков"""
-        end_date = datetime.utcnow()
+        end_date = datetime.now()
         start_date = end_date - timedelta(days=days)
         
-        # Ежедневные данные
         daily_data = []
         for i in range(days):
             date = start_date + timedelta(days=i)
             next_date = date + timedelta(days=1)
             
-            # Депозиты
             deposits = db.session.query(func.sum(Transaction.amount)).filter(
                 Transaction.type == 'deposit',
                 Transaction.status == 'completed',
@@ -77,20 +68,17 @@ class AdminService:
                 Transaction.timestamp < next_date
             ).scalar() or 0
             
-            # Ставки
             bets = db.session.query(func.sum(Bet.amount)).filter(
                 Bet.timestamp >= date,
                 Bet.timestamp < next_date
             ).scalar() or 0
             
-            # Выигрыши
             wins = db.session.query(func.sum(Bet.win_amount)).filter(
                 Bet.result == 'win',
                 Bet.timestamp >= date,
                 Bet.timestamp < next_date
             ).scalar() or 0
             
-            # Новые пользователи
             new_users = User.query.filter(
                 User.registered_at >= date,
                 User.registered_at < next_date
@@ -105,7 +93,6 @@ class AdminService:
                 'new_users': new_users
             })
         
-        # Распределение по играм
         games = Game.query.all()
         game_distribution = []
         
@@ -118,7 +105,6 @@ class AdminService:
                     'category': game.category
                 })
         
-        # Распределение по странам
         country_distribution = []
         countries = db.session.query(
             User.country,
@@ -130,7 +116,7 @@ class AdminService:
         ).group_by(User.country).all()
         
         for country in countries:
-            if country[0]:  # Проверяем, что страна не None
+            if country[0]:
                 country_distribution.append({
                     'country': country[0],
                     'users': country[1],
@@ -139,17 +125,15 @@ class AdminService:
         
         return {
             'daily_data': daily_data,
-            'game_distribution': game_distribution[:10],  # Топ 10 игр
-            'country_distribution': country_distribution[:10]  # Топ 10 стран
+            'game_distribution': game_distribution[:10], 
+            'country_distribution': country_distribution[:10]  
         }
     
     @staticmethod
     def get_user_activity(user_id, days=30):
-        """Активность пользователя"""
-        end_date = datetime.utcnow()
+        end_date = datetime.now()
         start_date = end_date - timedelta(days=days)
         
-        # Ставки по дням
         daily_bets = db.session.query(
             func.date(Bet.timestamp).label('date'),
             func.count(Bet.id).label('bet_count'),
@@ -160,7 +144,6 @@ class AdminService:
             Bet.timestamp >= start_date
         ).group_by(func.date(Bet.timestamp)).all()
         
-        # Любимые игры
         favorite_games = db.session.query(
             Game.title,
             func.count(Bet.id).label('bet_count'),

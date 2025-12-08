@@ -6,7 +6,6 @@ class SupportService:
     
     @staticmethod
     def create_ticket(user_id, subject, message, category='general'):
-        """Создание тикета поддержки"""
         ticket = SupportTicket(
             user_id=user_id,
             subject=subject,
@@ -28,26 +27,22 @@ class SupportService:
     
     @staticmethod
     def add_message(ticket_id, user_id, message, is_admin=False):
-        """Добавление сообщения в тикет"""
         ticket = SupportTicket.query.get(ticket_id)
         if not ticket:
             return {'success': False, 'error': 'Ticket not found'}
         
-        # Создаем сообщение
         support_message = SupportMessage(
             ticket_id=ticket_id,
             user_id=user_id,
             message=message,
             is_admin=is_admin,
             read=False,
-            created_at=datetime.utcnow()
+            created_at=datetime.now()
         )
         
-        # Обновляем тикет
-        ticket.updated_at = datetime.utcnow()
+        ticket.updated_at = datetime.now()
         ticket.last_reply_by = UserRole.ADMIN if is_admin else UserRole.PLAYER
         
-        # Если тикет был закрыт и пользователь пишет, открываем его снова
         if ticket.status == TicketStatus.CLOSED and not is_admin:
             ticket.status = TicketStatus.OPEN
             ticket.admin_id = None
@@ -63,7 +58,6 @@ class SupportService:
     
     @staticmethod
     def get_user_tickets(user_id, limit=20):
-        """Получение тикетов пользователя"""
         tickets = SupportTicket.query.filter_by(user_id=user_id)\
             .order_by(SupportTicket.updated_at.desc())\
             .limit(limit)\
@@ -83,12 +77,10 @@ class SupportService:
     
     @staticmethod
     def get_ticket_messages(ticket_id, user_id=None):
-        """Получение сообщений тикета"""
         query = SupportMessage.query.filter_by(ticket_id=ticket_id)\
             .order_by(SupportMessage.created_at.asc())
         
         if user_id:
-            # Помечаем сообщения поддержки как прочитанные
             messages = query.all()
             for message in messages:
                 if message.is_admin and not message.read:
@@ -110,7 +102,6 @@ class SupportService:
     
     @staticmethod
     def get_unread_count(ticket_id, user_id):
-        """Количество непрочитанных сообщений"""
         return SupportMessage.query.filter_by(
             ticket_id=ticket_id,
             is_admin=True,
@@ -119,15 +110,12 @@ class SupportService:
     
     @staticmethod
     def get_user_unread_count(user_id):
-        """Общее количество непрочитанных сообщений пользователя"""
-        # Находим тикеты пользователя
         user_tickets = SupportTicket.query.filter_by(user_id=user_id).all()
         ticket_ids = [t.id for t in user_tickets]
         
         if not ticket_ids:
             return 0
         
-        # Считаем непрочитанные сообщения
         return SupportMessage.query.filter(
             SupportMessage.ticket_id.in_(ticket_ids),
             SupportMessage.is_admin == True,
@@ -136,7 +124,6 @@ class SupportService:
     
     @staticmethod
     def search_tickets(query, user_id=None):
-        """Поиск тикетов"""
         search_query = SupportTicket.query
         
         if user_id:

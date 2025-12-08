@@ -11,27 +11,22 @@ from werkzeug.utils import secure_filename
 
 auth_bp = Blueprint('auth', __name__)
 
-# ========== HTML СТРАНИЦЫ ==========
 
 @auth_bp.route('/login', methods=['GET'])
 def show_login_form():
-    """Показать HTML форму входа"""
     if current_user.is_authenticated:
         return render_template('dashboard.html')
     return render_template('login.html')
 
 @auth_bp.route('/register', methods=['GET'])
 def show_register_form():
-    """Показать HTML форму регистрации"""
     if current_user.is_authenticated:
         return render_template('dashboard.html')
     return render_template('register.html')
 
-# ========== API ЭНДПОИНТЫ ==========
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    """API: Вход пользователя"""
     data = request.get_json()
     
     if not data:
@@ -47,13 +42,11 @@ def login():
     
     user = result['user']
     
-    # Вход через Flask-Login
     login_user(user, remember=True)
     
-    # Генерация JWT токена
     token = jwt.encode({
         'user_id': user.id,
-        'exp': datetime.utcnow() + timedelta(hours=24)
+        'exp': datetime.now() + timedelta(hours=24)
     }, 'secret-key', algorithm='HS256')
     
     response = make_response(jsonify({
@@ -68,7 +61,6 @@ def login():
         'redirect': '/dashboard'
     }))
     
-    # Установка cookie
     response.set_cookie(
         'session_token',
         token,
@@ -82,7 +74,6 @@ def login():
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
-    """API: Регистрация пользователя"""
     data = request.get_json()
     
     if not data:
@@ -99,13 +90,11 @@ def register():
     
     user = result['user']
     
-    # Вход пользователя после регистрации
     login_user(user, remember=True)
     
-    # Генерация JWT токена
     token = jwt.encode({
         'user_id': user.id,
-        'exp': datetime.utcnow() + timedelta(hours=24)
+        'exp': datetime.now() + timedelta(hours=24)
     }, 'secret-key', algorithm='HS256')
     
     response = make_response(jsonify({
@@ -120,7 +109,6 @@ def register():
         'redirect': '/dashboard'
     }), 201)
     
-    # Установка HTTP-only cookie
     response.set_cookie(
         'session_token',
         token,
@@ -135,7 +123,6 @@ def register():
 @auth_bp.route('/logout', methods=['POST'])
 @login_required
 def logout():
-    """API: Выход пользователя"""
     result = AuthService.logout_user(current_user.id, request)
     
     logout_user()
@@ -148,7 +135,6 @@ def logout():
 @auth_bp.route('/profile', methods=['GET'])
 @login_required
 def get_profile():
-    """API: Получение профиля пользователя"""
     profile = AuthService.get_user_profile(current_user.id)
     
     if not profile:
@@ -159,7 +145,6 @@ def get_profile():
 @auth_bp.route('/profile', methods=['PUT'])
 @login_required
 def update_profile():
-    """API: Обновление профиля"""
     data = request.get_json()
     
     result = AuthService.update_user_profile(current_user.id, data)
@@ -172,7 +157,6 @@ def update_profile():
 @auth_bp.route('/change-password', methods=['POST'])
 @login_required
 def change_password():
-    """API: Смена пароля"""
     data = request.get_json()
     
     current_password = data.get('current_password')
@@ -190,7 +174,6 @@ def change_password():
 
 @auth_bp.route('/status', methods=['GET'])
 def check_auth_status():
-    """API: Проверка статуса аутентификации"""
     if current_user.is_authenticated:
         return jsonify({
             'authenticated': True,
@@ -204,12 +187,9 @@ def check_auth_status():
         })
     return jsonify({'authenticated': False})
 
-# ========== KYC ЭНДПОИНТЫ ==========
-
 @auth_bp.route('/kyc/status', methods=['GET'])
 @login_required
 def get_kyc_status():
-    """API: Получение статуса KYC"""
     documents = KYCDocument.query.filter_by(user_id=current_user.id).all()
     
     return jsonify({
@@ -228,7 +208,6 @@ def get_kyc_status():
 @auth_bp.route('/kyc/submit', methods=['POST'])
 @login_required
 def submit_kyc():
-    """API: Отправка KYC документов"""
     if not request.files:
         return jsonify({'error': 'No files provided'}), 400
     
@@ -238,9 +217,8 @@ def submit_kyc():
     if not document_type:
         return jsonify({'error': 'Document type required'}), 400
     
-    # Проверяем лимиты файлов
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
-    MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+    MAX_FILE_SIZE = 5 * 1024 * 1024 
     
     front_image = request.files.get('front_image')
     back_image = request.files.get('back_image')
@@ -249,7 +227,6 @@ def submit_kyc():
     if not front_image or not selfie_image:
         return jsonify({'error': 'Front image and selfie are required'}), 400
     
-    # Проверка размера файлов
     for file in [front_image, back_image, selfie_image]:
         if file and file.content_length > MAX_FILE_SIZE:
             return jsonify({'error': f'File {file.filename} is too large. Max 5MB.'}), 400
@@ -257,7 +234,6 @@ def submit_kyc():
         if file and not ('.' in file.filename and file.filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS):
             return jsonify({'error': f'File {file.filename} has invalid extension'}), 400
     
-    # Сохраняем файлы
     upload_folder = 'uploads/kyc'
     os.makedirs(upload_folder, exist_ok=True)
     
@@ -273,7 +249,6 @@ def submit_kyc():
     back_path = save_file(back_image) if back_image else None
     selfie_path = save_file(selfie_image)
     
-    # Создаем запись KYC
     kyc_doc = KYCDocument(
         user_id=current_user.id,
         document_type=document_type,
@@ -286,13 +261,11 @@ def submit_kyc():
     
     db.session.add(kyc_doc)
     
-    # Обновляем статус пользователя
     current_user.kyc_status = KYCStatus.PENDING
     current_user.kyc_verified = False
     
     db.session.commit()
     
-    # Аудит
     from utils.security import create_audit_log
     create_audit_log(
         'KYC_SUBMIT',
@@ -310,7 +283,6 @@ def submit_kyc():
 @auth_bp.route('/kyc/history', methods=['GET'])
 @login_required
 def get_kyc_history():
-    """API: История KYC заявок"""
     documents = KYCDocument.query.filter_by(user_id=current_user.id)\
         .order_by(KYCDocument.submitted_at.desc())\
         .all()
@@ -328,123 +300,6 @@ def get_kyc_history():
         } for doc in documents]
     })
 
-# ========== ЛИМИТЫ И САМОИСКЛЮЧЕНИЕ ==========
-
-@auth_bp.route('/limits', methods=['GET'])
-@login_required
-def get_limits():
-    """API: Получение лимитов пользователя"""
-    return jsonify({
-        'daily_deposit_limit': current_user.daily_deposit_limit,
-        'daily_loss_limit': current_user.daily_loss_limit,
-        'session_time_limit': current_user.session_time_limit,
-        'cool_off_period': current_user.cool_off_period,
-        'self_excluded_until': current_user.self_excluded_until.isoformat() if current_user.self_excluded_until else None
-    })
-
-@auth_bp.route('/limits', methods=['PUT'])
-@login_required
-def update_limits():
-    """API: Обновление лимитов"""
-    data = request.get_json()
-    
-    changes = []
-    
-    if 'daily_deposit_limit' in data:
-        current_user.daily_deposit_limit = max(0, float(data['daily_deposit_limit']))
-        changes.append(f"Daily deposit limit set to ${current_user.daily_deposit_limit}")
-    
-    if 'daily_loss_limit' in data:
-        current_user.daily_loss_limit = max(0, float(data['daily_loss_limit']))
-        changes.append(f"Daily loss limit set to ${current_user.daily_loss_limit}")
-    
-    if 'session_time_limit' in data:
-        current_user.session_time_limit = max(0, int(data['session_time_limit']))
-        changes.append(f"Session time limit set to {current_user.session_time_limit} minutes")
-    
-    if 'cool_off_period' in data:
-        current_user.cool_off_period = max(0, int(data['cool_off_period']))
-        changes.append(f"Cool-off period set to {current_user.cool_off_period} days")
-    
-    db.session.commit()
-    
-    return jsonify({
-        'message': 'Limits updated successfully',
-        'changes': changes
-    })
-
-@auth_bp.route('/self-exclude', methods=['POST'])
-@login_required
-def self_exclude():
-    """API: Самоисключение"""
-    data = request.get_json()
-    
-    duration_days = int(data.get('duration', 30))
-    reason = data.get('reason', '')
-    
-    if duration_days not in [1, 7, 30, 90, 180, 365, 9999]:
-        return jsonify({'error': 'Invalid duration'}), 400
-    
-    # Устанавливаем дату окончания самоисключения
-    from datetime import datetime, timedelta
-    if duration_days == 9999:  # Permanent
-        exclude_until = datetime.utcnow() + timedelta(days=36500)  # 100 лет
-    else:
-        exclude_until = datetime.utcnow() + timedelta(days=duration_days)
-    
-    current_user.self_excluded_until = exclude_until
-    current_user.status = 'blocked'
-    
-    # Завершение всех активных сессий
-    from models import Session
-    active_sessions = Session.query.filter_by(
-        user_id=current_user.id,
-        active=True
-    ).all()
-    
-    for session in active_sessions:
-        session.active = False
-        session.logout_time = datetime.utcnow()
-    
-    # Аудит
-    from utils.security import create_audit_log
-    create_audit_log(
-        'SELF_EXCLUDE',
-        f'User {current_user.username} self-excluded for {duration_days} days. Reason: {reason}',
-        current_user.id,
-        request
-    )
-    
-    db.session.commit()
-    
-    return jsonify({
-        'message': f'Account self-excluded for {duration_days} days',
-        'reactivation_date': exclude_until.isoformat()
-    })
-
-@auth_bp.route('/sessions', methods=['GET'])
-@login_required
-def get_sessions():
-    """API: История сессий"""
-    from models import Session
-    sessions = Session.query.filter_by(user_id=current_user.id)\
-        .order_by(Session.login_time.desc())\
-        .limit(20)\
-        .all()
-    
-    return jsonify({
-        'sessions': [{
-            'id': s.id,
-            'ip_address': s.ip_address,
-            'device': s.device,
-            'browser': s.browser,
-            'login_time': s.login_time.isoformat(),
-            'logout_time': s.logout_time.isoformat() if s.logout_time else None,
-            'active': s.active
-        } for s in sessions]
-    })
-
-# ========== ДЕКОРАТОРЫ ДЛЯ ПРОВЕРКИ РОЛЕЙ ==========
 
 def admin_required(f):
     @wraps(f)
@@ -459,6 +314,22 @@ def moderator_required(f):
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated or current_user.role not in [UserRole.ADMIN, UserRole.MODERATOR]:
             return jsonify({'error': 'Moderator access required'}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
+def support_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.role not in [UserRole.ADMIN, UserRole.MODERATOR, UserRole.SUPPORT]:
+            return jsonify({'error': 'Support access required'}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
+def staff_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.role not in [UserRole.ADMIN, UserRole.MODERATOR, UserRole.SUPPORT]:
+            return jsonify({'error': 'Staff access required'}), 403
         return f(*args, **kwargs)
     return decorated_function
 

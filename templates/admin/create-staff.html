@@ -1,0 +1,207 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Create Staff - BeaversCasino{% endblock %}
+
+{% block page_title %}Create Staff User{% endblock %}
+
+{% block header_actions %}
+<button class="btn btn-secondary" onclick="window.location.href='/admin/staff/list'">
+    <i class="fas fa-list"></i> View All Staff
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <form id="create-staff-form">
+        <div class="mb-3">
+            <label class="form-label">Username *</label>
+            <input type="text" id="username" class="form-control" required>
+            <div class="form-text">3-20 characters, letters, numbers and underscores only</div>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label">Email *</label>
+            <input type="email" id="email" class="form-control" required>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label">Role *</label>
+            <select id="role" class="form-control" required>
+                <option value="">Select Role</option>
+                <option value="support">Support Staff</option>
+                <option value="moderator">Moderator</option>
+            </select>
+            <div class="form-text">
+                <strong>Support:</strong> Can handle support tickets and KYC verification<br>
+                <strong>Moderator:</strong> Can manage users, games, and all support functions
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label">Password *</label>
+            <input type="password" id="password" class="form-control" required>
+            <div class="password-requirements">
+                <small>Must contain:</small>
+                <ul>
+                    <li>At least 8 characters</li>
+                    <li>One uppercase letter</li>
+                    <li>One lowercase letter</li>
+                    <li>One number</li>
+                    <li>One special character</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label">Confirm Password *</label>
+            <input type="password" id="confirm-password" class="form-control" required>
+        </div>
+        
+        <div class="mb-3">
+            <div class="form-check">
+                <input type="checkbox" id="send-credentials" class="form-check-input" checked>
+                <label class="form-check-label">Send login credentials via email</label>
+            </div>
+        </div>
+        
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            Staff users are automatically KYC verified and have access to admin panel based on their role.
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">
+            <i class="fas fa-user-plus"></i> Create Staff User
+        </button>
+    </form>
+</div>
+
+<style>
+    .password-requirements {
+        margin-top: 0.5rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 5px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .password-requirements ul {
+        margin-bottom: 0;
+        padding-left: 1.5rem;
+    }
+    
+    .form-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+</style>
+
+<script>
+    document.getElementById('create-staff-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const username = document.getElementById('username').value;
+        const email = document.getElementById('email').value;
+        const role = document.getElementById('role').value;
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirm-password').value;
+        const sendCredentials = document.getElementById('send-credentials').checked;
+        
+        if (password !== confirmPassword) {
+            alert('Passwords do not match');
+            return;
+        }
+        
+        if (password.length < 8) {
+            alert('Password must be at least 8 characters');
+            return;
+        }
+        
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasNumbers = /\d/.test(password);
+        const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+        
+        if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
+            alert('Password must contain uppercase, lowercase, number and special character');
+            return;
+        }
+        
+        if (!role) {
+            alert('Please select a role');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/admin/staff/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    email: email,
+                    password: password,
+                    role: role,
+                    send_credentials: sendCredentials
+                }),
+                credentials: 'include'
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                alert('Staff user created successfully!\n\n' +
+                      `Username: ${data.user.username}\n` +
+                      `Email: ${data.user.email}\n` +
+                      `Role: ${data.user.role}\n\n` +
+                      'Please save these credentials.');
+                
+                document.getElementById('create-staff-form').reset();
+                
+                setTimeout(() => {
+                    window.location.href = '/admin/staff/list';
+                }, 2000);
+            } else {
+                alert(data.error);
+            }
+        } catch (error) {
+            console.error('Create staff error:', error);
+            alert('Network error occurred');
+        }
+    });
+    
+    document.getElementById('password').addEventListener('input', function() {
+        validatePasswordStrength(this.value);
+    });
+    
+    function validatePasswordStrength(password) {
+        const requirements = {
+            length: password.length >= 8,
+            uppercase: /[A-Z]/.test(password),
+            lowercase: /[a-z]/.test(password),
+            number: /\d/.test(password),
+            special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+        };
+        
+        const requirementElements = document.querySelectorAll('.password-requirements li');
+        
+        const icons = {
+            length: requirementElements[0],
+            uppercase: requirementElements[1],
+            lowercase: requirementElements[2],
+            number: requirementElements[3],
+            special: requirementElements[4]
+        };
+        
+        for (const [key, element] of Object.entries(icons)) {
+            if (requirements[key]) {
+                element.style.color = '#27ae60';
+                element.innerHTML = element.innerHTML.replace('●', '✓');
+            } else {
+                element.style.color = '#e74c3c';
+                element.innerHTML = element.innerHTML.replace('✓', '●');
+            }
+        }
+    }
+</script>
+{% endblock %}

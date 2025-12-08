@@ -1,0 +1,515 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Support Dashboard - BeaversCasino{% endblock %}
+
+{% block page_title %}Support Dashboard{% endblock %}
+
+{% block header_actions %}
+<div class="btn-group">
+    <button class="btn btn-primary" onclick="window.location.href='/admin/support/tickets?status=open'">
+        <i class="fas fa-inbox"></i> Open Tickets
+    </button>
+    <button class="btn btn-success" onclick="window.location.href='/admin/support/tickets?status=in_progress&assigned_to_me=true'">
+        <i class="fas fa-user-check"></i> My Tickets
+    </button>
+    <button class="btn btn-info" onclick="showQuickReplyModal()">
+        <i class="fas fa-reply"></i> Quick Reply
+    </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-stats">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-value" id="total-tickets">0</div>
+                <div class="stat-label">Total Tickets</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-value" id="open-tickets">0</div>
+                <div class="stat-label">Open Tickets</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-value" id="my-tickets">0</div>
+                <div class="stat-label">My Tickets</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-value" id="pending-kyc">0</div>
+                <div class="stat-label">Pending KYC</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <h3><i class="fas fa-ticket-alt"></i> Recent Tickets</h3>
+            <div id="recent-tickets" class="data-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Subject</th>
+                            <th>User</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Last Update</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tickets-table-body">
+                        <tr>
+                            <td colspan="7" class="text-center">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+            <div class="action-buttons">
+                <button class="btn btn-primary btn-block mb-2" onclick="assignUnassignedTickets()">
+                    <i class="fas fa-user-plus"></i> Assign Unassigned Tickets
+                </button>
+                <button class="btn btn-success btn-block mb-2" onclick="window.open('/admin/support/kyc/pending', '_blank')">
+                    <i class="fas fa-id-card"></i> Review KYC
+                </button>
+                <button class="btn btn-warning btn-block mb-2" onclick="showPerformanceStats()">
+                    <i class="fas fa-chart-bar"></i> Performance
+                </button>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <h3><i class="fas fa-comment-dots"></i> Quick Reply Templates</h3>
+            <div class="template-list">
+                <button class="btn btn-outline-primary btn-sm mb-1" onclick="useTemplate('welcome')">
+                    Welcome Message
+                </button>
+                <button class="btn btn-outline-primary btn-sm mb-1" onclick="useTemplate('deposit')">
+                    Deposit Issue
+                </button>
+                <button class="btn btn-outline-primary btn-sm mb-1" onclick="useTemplate('withdrawal')">
+                    Withdrawal Info
+                </button>
+                <button class="btn btn-outline-primary btn-sm mb-1" onclick="useTemplate('kyc')">
+                    KYC Instructions
+                </button>
+                <button class="btn btn-outline-primary btn-sm mb-1" onclick="useTemplate('bonus')">
+                    Bonus Question
+                </button>
+                <button class="btn btn-outline-primary btn-sm" onclick="useTemplate('close')">
+                    Close Ticket
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="quickReplyModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-reply"></i> Quick Reply</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="quick-reply-form">
+                    <div class="mb-3">
+                        <label class="form-label">Ticket ID</label>
+                        <input type="number" id="ticket-id" class="form-control" placeholder="Enter ticket ID" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Template</label>
+                        <select id="template-select" class="form-control">
+                            <option value="">Custom Message</option>
+                            <option value="welcome">Welcome Message</option>
+                            <option value="deposit">Deposit Issue</option>
+                            <option value="withdrawal">Withdrawal Info</option>
+                            <option value="kyc">KYC Instructions</option>
+                            <option value="bonus">Bonus Question</option>
+                            <option value="close">Close Ticket</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Message</label>
+                        <textarea id="quick-message" class="form-control" rows="4" placeholder="Enter your message..." required></textarea>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input type="checkbox" id="close-after-reply" class="form-check-input">
+                        <label class="form-check-label">Close ticket after reply</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="sendQuickReply()">Send Reply</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        margin: -10px;
+    }
+    
+    .col-md-3, .col-md-4, .col-md-8 {
+        padding: 10px;
+    }
+    
+    .col-md-3 {
+        flex: 0 0 25%;
+        max-width: 25%;
+    }
+    
+    .col-md-4 {
+        flex: 0 0 33.333%;
+        max-width: 33.333%;
+    }
+    
+    .col-md-8 {
+        flex: 0 0 66.667%;
+        max-width: 66.667%;
+    }
+    
+    .mt-4 {
+        margin-top: 1.5rem;
+    }
+    
+    .template-list {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .template-list button {
+        text-align: left;
+    }
+    
+    .btn-block {
+        display: block;
+        width: 100%;
+    }
+    
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .data-table table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .data-table th {
+        background: #3498db;
+        color: white;
+        padding: 10px;
+        text-align: left;
+    }
+    
+    .data-table td {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: bold;
+    }
+    
+    .badge-open { background: #f39c12; color: white; }
+    .badge-in-progress { background: #3498db; color: white; }
+    .badge-closed { background: #27ae60; color: white; }
+    .badge-low { background: #27ae60; color: white; }
+    .badge-medium { background: #f39c12; color: white; }
+    .badge-high { background: #e74c3c; color: white; }
+    .badge-urgent { background: #c0392b; color: white; }
+</style>
+
+<script>
+    async function loadSupportStats() {
+        try {
+            const response = await fetch('/api/admin/support/dashboard', {
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                updateSupportStats(data);
+            }
+        } catch (error) {
+            console.error('Failed to load support stats:', error);
+        }
+    }
+    
+    function updateSupportStats(data) {
+        if (data.stats) {
+            document.getElementById('total-tickets').textContent = data.stats.total_tickets;
+            document.getElementById('open-tickets').textContent = data.stats.open_tickets;
+            document.getElementById('my-tickets').textContent = data.stats.my_tickets;
+        }
+        
+        loadPendingKycCount();
+        
+        displayRecentTickets(data.recent_tickets || []);
+    }
+    
+    async function loadPendingKycCount() {
+        try {
+            const response = await fetch('/api/admin/support/kyc/pending?per_page=1', {
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('pending-kyc').textContent = data.total || 0;
+            }
+        } catch (error) {
+            console.error('Failed to load KYC count:', error);
+        }
+    }
+    
+    function displayRecentTickets(tickets) {
+        const tbody = document.getElementById('tickets-table-body');
+        if (!tbody) return;
+        
+        if (tickets.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center">No recent tickets</td>
+                </tr>
+            `;
+            return;
+        }
+        
+        tbody.innerHTML = tickets.map(ticket => `
+            <tr>
+                <td>#${ticket.id}</td>
+                <td><strong>${ticket.subject}</strong></td>
+                <td>${ticket.username}</td>
+                <td><span class="badge badge-${ticket.status}">${ticket.status}</span></td>
+                <td><span class="badge badge-${ticket.priority}">${ticket.priority}</span></td>
+                <td>${formatTimeAgo(ticket.updated_at)}</td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-primary" onclick="viewTicket(${ticket.id})">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        ${ticket.assigned_to_me ? '' : `
+                            <button class="btn btn-success" onclick="assignTicketToMe(${ticket.id})">
+                                <i class="fas fa-user-plus"></i>
+                            </button>
+                        `}
+                        <button class="btn btn-info" onclick="quickReplyToTicket(${ticket.id})">
+                            <i class="fas fa-reply"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+    
+    function formatTimeAgo(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = now - date;
+        
+        if (diff < 60000) return 'Just now';
+        if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+        if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+        return date.toLocaleDateString();
+    }
+    
+    function viewTicket(ticketId) {
+        window.location.href = `/admin/support/tickets/${ticketId}`;
+    }
+    
+    async function assignTicketToMe(ticketId) {
+        try {
+            const response = await fetch('/api/admin/support/tickets/assign', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ ticket_id: ticketId }),
+                credentials: 'include'
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                alert('Ticket assigned to you');
+                loadSupportStats();
+            } else {
+                alert(data.error);
+            }
+        } catch (error) {
+            console.error('Assign error:', error);
+            alert('Network error');
+        }
+    }
+    
+    async function assignUnassignedTickets() {
+        if (!confirm('Assign all unassigned tickets to yourself?')) return;
+        
+        try {
+            const response = await fetch('/api/admin/support/tickets/bulk-action', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    ticket_ids: [],
+                    action: 'assign_to_me'
+                }),
+                credentials: 'include'
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                alert(`${data.updated_count} tickets assigned to you`);
+                loadSupportStats();
+            } else {
+                alert(data.error);
+            }
+        } catch (error) {
+            console.error('Bulk assign error:', error);
+            alert('Network error');
+        }
+    }
+    
+    function showQuickReplyModal() {
+        const modal = new bootstrap.Modal(document.getElementById('quickReplyModal'));
+        modal.show();
+    }
+    
+    function useTemplate(template) {
+        document.getElementById('template-select').value = template;
+        
+        const templates = {
+            'welcome': 'Добрый день! Спасибо за обращение. Наша служба поддержки уже работает над вашим вопросом.',
+            'deposit': 'По вопросам депозитов: пожалуйста, проверьте, что вы используете один из наших поддерживаемых методов оплаты. Обычно депозиты проходят мгновенно.',
+            'withdrawal': 'По вопросам вывода средств: выплаты обрабатываются в течение 1-3 рабочих дней после верификации KYC.',
+            'kyc': 'Для завершения KYC верификации, пожалуйста, загрузите документы в соответствующем разделе вашего профиля.',
+            'bonus': 'Бонусы активируются автоматически при выполнении условий. Пожалуйста, проверьте раздел "Бонусы" в вашем профиле.',
+            'close': 'Спасибо за обращение! Если у вас возникнут дополнительные вопросы, не стесняйтесь создавать новый тикет.'
+        };
+        
+        if (template in templates) {
+            document.getElementById('quick-message').value = templates[template];
+            if (template === 'close') {
+                document.getElementById('close-after-reply').checked = true;
+            }
+        }
+    }
+    
+    function quickReplyToTicket(ticketId) {
+        document.getElementById('ticket-id').value = ticketId;
+        showQuickReplyModal();
+    }
+    
+    async function sendQuickReply() {
+        const ticketId = document.getElementById('ticket-id').value;
+        const template = document.getElementById('template-select').value;
+        const message = document.getElementById('quick-message').value;
+        const closeTicket = document.getElementById('close-after-reply').checked;
+        
+        if (!ticketId || !message) {
+            alert('Please enter ticket ID and message');
+            return;
+        }
+        
+        try {
+            let response;
+            
+            if (template) {
+                response = await fetch(`/api/admin/support/tickets/${ticketId}/quick-reply`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        template: template,
+                        close_ticket: closeTicket
+                    }),
+                    credentials: 'include'
+                });
+            } else {
+                response = await fetch(`/api/admin/support/tickets/${ticketId}/reply`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        close_ticket: closeTicket
+                    }),
+                    credentials: 'include'
+                });
+            }
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                alert('Reply sent successfully');
+                bootstrap.Modal.getInstance(document.getElementById('quickReplyModal')).hide();
+                document.getElementById('quick-reply-form').reset();
+                loadSupportStats();
+            } else {
+                alert(data.error);
+            }
+        } catch (error) {
+            console.error('Reply error:', error);
+            alert('Network error');
+        }
+    }
+    
+    async function showPerformanceStats() {
+        try {
+            const response = await fetch('/api/admin/support/performance', {
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                
+                let message = '📊 Support Performance (Last 30 days):\n\n';
+                data.performance.forEach((staff, index) => {
+                    message += `${index + 1}. ${staff.username} (${staff.role}):\n`;
+                    message += `   Tickets closed: ${staff.tickets_closed}\n`;
+                    message += `   Avg response time: ${staff.avg_response_time_hours} hours\n\n`;
+                });
+                
+                alert(message);
+            }
+        } catch (error) {
+            console.error('Performance stats error:', error);
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        loadSupportStats();
+        
+        setInterval(() => {
+            loadSupportStats();
+        }, 30000);
+    });
+</script>
+{% endblock %}

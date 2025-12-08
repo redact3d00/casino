@@ -138,7 +138,6 @@ def search_tickets():
 @support_bp.route('/categories', methods=['GET'])
 @login_required
 def get_categories():
-    """Получение категорий поддержки"""
     categories = [
         {'id': 'deposit', 'name': 'Deposit Issues', 'icon': '💰'},
         {'id': 'withdrawal', 'name': 'Withdrawal Issues', 'icon': '🏧'},

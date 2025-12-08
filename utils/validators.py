@@ -4,20 +4,16 @@ from flask import current_app
 from models import Bet, db
 
 def sanitize_input(input_string):
-    """Очистка ввода от опасных символов"""
     if not input_string:
         return ''
     
-    # Удаление HTML тегов
     sanitized = re.sub(r'<[^>]*>', '', input_string)
-    # Удаление опасных символов
     sanitized = re.sub(r'[;\"\']', '', sanitized)
     sanitized = sanitized.strip()
     
     return sanitized
 
 def validate_bet_amount(user, game, amount):
-    """Валидация суммы ставки"""
     if amount < float(game.min_bet):
         return False, f"Bet amount below minimum ({game.min_bet})"
     
@@ -30,7 +26,6 @@ def validate_bet_amount(user, game, amount):
     if amount > float(user.balance):
         return False, "Insufficient balance"
     
-    # Проверка дневного лимита проигрыша
     today = datetime.now().date()
     today_loss = Bet.query.with_entities(
         db.func.sum(Bet.amount - Bet.win_amount)
@@ -46,7 +41,6 @@ def validate_bet_amount(user, game, amount):
     return True, "Valid bet"
 
 def validate_username(username):
-    """Валидация имени пользователя"""
     if len(username) < 3:
         return False, "Username must be at least 3 characters"
     if len(username) > 20:
@@ -56,7 +50,6 @@ def validate_username(username):
     return True, "Valid username"
 
 def validate_amount(amount, min_amount=0, max_amount=10000):
-    """Валидация суммы"""
     try:
         amount_float = float(amount)
         if amount_float < min_amount:

@@ -1,5 +1,3 @@
-// JavaScript для игр
-
 class GameManager {
     constructor() {
         this.currentGame = null;
@@ -70,7 +68,6 @@ class GameManager {
     }
     
     setupGameListeners() {
-        // Делегирование событий для кнопок play
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('play-btn')) {
                 const gameId = e.target.dataset.gameId;
@@ -81,7 +78,6 @@ class GameManager {
             }
         });
         
-        // Валидация суммы ставки
         document.addEventListener('input', (e) => {
             if (e.target.classList.contains('bet-amount')) {
                 const min = parseFloat(e.target.min);
@@ -101,7 +97,6 @@ class GameManager {
         const result = await window.casinoApp.playGame(gameId, amount);
         
         if (result) {
-            // Обновление истории игр если на странице есть контейнер
             this.updateGameHistory();
         }
     }
@@ -164,7 +159,6 @@ class GameManager {
     }
 }
 
-// Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
     window.gameManager = new GameManager();
 });

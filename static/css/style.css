@@ -17,7 +17,6 @@ body {
     padding: 0 20px;
 }
 
-/* Навигация */
 .navbar {
     background: rgba(0, 0, 0, 0.9);
     padding: 1rem 0;
@@ -77,13 +76,11 @@ body {
     font-weight: bold;
 }
 
-/* Основной контент */
 main {
     padding: 2rem 0;
     min-height: calc(100vh - 200px);
 }
 
-/* Карточки */
 .card {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 10px;
@@ -98,7 +95,6 @@ main {
     margin-bottom: 1rem;
 }
 
-/* Кнопки */
 .btn {
     display: inline-block;
     padding: 0.75rem 1.5rem;
@@ -151,7 +147,6 @@ main {
     transform: translateY(-2px);
 }
 
-/* Формы */
 .form-group {
     margin-bottom: 1.5rem;
 }
@@ -178,7 +173,6 @@ main {
     box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
-/* Уведомления */
 .alerts {
     margin-bottom: 2rem;
 }
@@ -213,7 +207,6 @@ main {
     color: #17a2b8;
 }
 
-/* Игры */
 .games-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -258,7 +251,6 @@ main {
     color: #ccc;
 }
 
-/* Футер */
 .footer {
     background: rgba(0, 0, 0, 0.9);
     padding: 2rem 0;
@@ -275,7 +267,6 @@ main {
     text-decoration: underline;
 }
 
-/* Таблицы */
 .table {
     width: 100%;
     background: rgba(255, 255, 255, 0.1);
@@ -303,7 +294,6 @@ main {
     border-bottom: none;
 }
 
-/* Адаптивность */
 @media (max-width: 768px) {
     .navbar-menu {
         flex-direction: column;

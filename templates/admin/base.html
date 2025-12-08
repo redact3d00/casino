@@ -14,26 +14,68 @@
         <!-- Sidebar -->
         <div class="admin-sidebar">
             <div class="sidebar-header">
-                <h3>🎰 Admin Panel</h3>
+                <h3>
+                    {% if current_user.role.value == 'admin' %}
+                        🎰 Admin Panel
+                    {% elif current_user.role.value == 'moderator' %}
+                        🛡️ Moderator Panel
+                    {% elif current_user.role.value == 'support' %}
+                        🛠️ Support Panel
+                    {% endif %}
+                </h3>
                 <small>BeaversCasino Management</small>
             </div>
             
             <ul class="sidebar-menu">
-                <li><a href="/admin" class="{{ 'active' if request.path == '/admin' }}">
-                    📊 Dashboard
+                {% if current_user.role.value in ['admin', 'moderator', 'support'] %}
+                <li><a href="/admin/support/dashboard" class="{{ 'active' if request.path == '/admin/support/dashboard' }}">
+                    📊 Support Dashboard
                 </a></li>
+                {% endif %}
+                
+                {% if current_user.role.value in ['admin', 'moderator', 'support'] %}
+                <li><a href="/admin/support/tickets" class="{{ 'active' if '/admin/support/tickets' in request.path }}">
+                    🎫 Support Tickets
+                </a></li>
+                {% endif %}
+                
+                {% if current_user.role.value in ['admin', 'moderator', 'support'] %}
+                <li><a href="/admin/support/kyc/pending" class="{{ 'active' if '/admin/support/kyc' in request.path }}">
+                    📋 KYC Verification
+                </a></li>
+                {% endif %}
+                
+                {% if current_user.role.value in ['admin', 'moderator'] %}
+                <li><a href="/admin" class="{{ 'active' if request.path == '/admin' }}">
+                    📈 Main Dashboard
+                </a></li>
+                {% endif %}
+                
+                {% if current_user.role.value == 'admin' %}
                 <li><a href="/admin/users" class="{{ 'active' if '/admin/users' in request.path }}">
                     👥 Users
                 </a></li>
+                <li><a href="/admin/staff/list" class="{{ 'active' if '/admin/staff' in request.path }}">
+                    👨‍💼 Staff Management
+                </a></li>
+                {% endif %}
+                
+                {% if current_user.role.value in ['admin', 'moderator'] %}
                 <li><a href="/admin/games" class="{{ 'active' if '/admin/games' in request.path }}">
                     🎮 Games
                 </a></li>
+                {% endif %}
+                
+                {% if current_user.role.value == 'admin' %}
                 <li><a href="/admin/transactions" class="{{ 'active' if '/admin/transactions' in request.path }}">
                     💰 Transactions
                 </a></li>
                 <li><a href="/admin/payouts" class="{{ 'active' if '/admin/payouts' in request.path }}">
                     🏧 Payouts
                 </a></li>
+                {% endif %}
+                
+                {% if current_user.role.value == 'admin' %}
                 <li><a href="/admin/audit" class="{{ 'active' if '/admin/audit' in request.path }}">
                     📝 Audit Log
                 </a></li>
@@ -43,6 +85,8 @@
                 <li><a href="/admin/settings" class="{{ 'active' if '/admin/settings' in request.path }}">
                     ⚙️ Settings
                 </a></li>
+                {% endif %}
+                
                 <li><a href="/" class="logout-link">
                     ← Back to Site
                 </a></li>
@@ -50,13 +94,15 @@
             
             <div class="sidebar-footer">
                 <small>Logged in as: {{ current_user.username }}</small>
+                <br>
+                <small>Role: {{ current_user.role.value }}</small>
             </div>
         </div>
         
         <!-- Main Content -->
         <div class="admin-content">
             <div class="content-header">
-                <h1>{% block page_title %}Admin Dashboard{% endblock %}</h1>
+                <h1>{% block page_title %}{% endblock %}</h1>
                 <div class="header-actions">
                     {% block header_actions %}{% endblock %}
                 </div>

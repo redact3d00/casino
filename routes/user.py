@@ -10,14 +10,12 @@ user_bp = Blueprint('user', __name__)
 @user_bp.route('/profile', methods=['GET'])
 @login_required
 def get_profile():
-    """Получение профиля пользователя"""
     profile = AuthService.get_user_profile(current_user.id)
     return jsonify(profile)
 
 @user_bp.route('/profile', methods=['PUT'])
 @login_required
 def update_profile():
-    """Обновление профиля"""
     data = request.get_json()
     
     result = AuthService.update_user_profile(current_user.id, data)
@@ -30,7 +28,6 @@ def update_profile():
 @user_bp.route('/transactions', methods=['GET'])
 @login_required
 def get_transactions():
-    """История транзакций пользователя"""
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 50, type=int)
     
@@ -40,7 +37,6 @@ def get_transactions():
 @user_bp.route('/sessions', methods=['GET'])
 @login_required
 def get_sessions():
-    """История сессий пользователя"""
     sessions = Session.query.filter_by(user_id=current_user.id)\
         .order_by(Session.login_time.desc())\
         .limit(20)\
@@ -61,7 +57,6 @@ def get_sessions():
 @user_bp.route('/bonuses', methods=['GET'])
 @login_required
 def get_bonuses():
-    """Бонусы пользователя"""
     bonuses = Bonus.query.filter_by(user_id=current_user.id)\
         .order_by(Bonus.activated_at.desc())\
         .all()
@@ -83,7 +78,6 @@ def get_bonuses():
 @user_bp.route('/self-exclude', methods=['POST'])
 @login_required
 def self_exclude():
-    """Самоисключение"""
     data = request.get_json()
     duration_days = data.get('duration', 30)
     
@@ -92,10 +86,8 @@ def self_exclude():
     
     from models import UserStatus
     
-    # Блокировка аккаунта
     current_user.status = UserStatus.BLOCKED
     
-    # Завершение всех активных сессий
     active_sessions = Session.query.filter_by(
         user_id=current_user.id,
         active=True
