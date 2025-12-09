@@ -85,7 +85,6 @@ class User(db.Model, UserMixin):
     cool_off_period = db.Column(db.Integer, default=0)
     self_excluded_until = db.Column(db.DateTime)
 
-    # Исправления: Явные foreign_keys для избежания конфликтов
     sessions = db.relationship('Session', backref='user', lazy=True, cascade='all, delete-orphan')
     bets = db.relationship('Bet', backref='user', lazy=True, cascade='all, delete-orphan')
     transactions = db.relationship('Transaction', backref='user', lazy=True, cascade='all, delete-orphan')
@@ -93,8 +92,8 @@ class User(db.Model, UserMixin):
     bonuses = db.relationship('Bonus', backref='user', lazy=True, cascade='all, delete-orphan')
     kyc_documents = db.relationship(
         'KYCDocument',
-        foreign_keys='KYCDocument.user_id',  # ← Ключевой фикс
-        backref='owner',  # Избегаем конфликта с verifier
+        foreign_keys='KYCDocument.user_id',  
+        backref='owner',  
         lazy=True,
         cascade='all, delete-orphan'
     )

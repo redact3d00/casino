@@ -41,6 +41,14 @@ def create_app():
     app.register_blueprint(support_bp, url_prefix='/api/support')
     app.register_blueprint(user_bp, url_prefix='/api/user')
 
+    csrf.exempt('routes.auth.logout')
+    csrf.exempt(games_bp)    
+    csrf.exempt(admin_bp)      
+    csrf.exempt(payments_bp)   
+    csrf.exempt(support_bp)    
+    csrf.exempt(user_bp)       
+    csrf.exempt(auth_bp)
+
     @app.route('/')
     def index():
         return render_template('index.html')

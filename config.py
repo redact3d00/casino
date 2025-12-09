@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or os.urandom(24).hex()  # Фикс: Генерация вместо хардкода
+    SECRET_KEY = os.environ.get('SECRET_KEY') or os.urandom(24).hex()  
     WTF_CSRF_SECRET_KEY = os.environ.get('WTF_CSRF_SECRET_KEY') or os.urandom(24).hex()
     WTF_CSRF_ENABLED = True
     

@@ -49,7 +49,7 @@ class KYCService:
         
         if approved:
             document.status = KYCStatus.VERIFIED
-            document.verified_at = datetime.utcnow()
+            document.verified_at = datetime.now()
             document.verified_by = admin_id
             
             document.user.kyc_verified = True

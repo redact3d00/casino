@@ -25,7 +25,7 @@ class AuthService:
             password_hash=generate_password_hash(password).decode('utf-8'),
             role=UserRole.PLAYER,
             status=UserStatus.VERIFICATION,
-            registered_at=datetime.utcnow()
+            registered_at=datetime.now()
         )
         db.session.add(user)
         db.session.commit()
@@ -37,14 +37,14 @@ class AuthService:
     @staticmethod
     def login_user(username, password, request):
         user = User.query.filter_by(username=username).first()
-        if not user or not check_password_hash(user.password_hash, password):  # Фикс: bcrypt check
+        if not user or not check_password_hash(user.password_hash, password):
             return {'success': False, 'error': 'Invalid credentials'}
         if user.status == UserStatus.BLOCKED:
             return {'success': False, 'error': 'Account is blocked'}
         if user.status == UserStatus.VERIFICATION:
             return {'success': False, 'error': 'Account pending verification'}
 
-        user.last_login = datetime.utcnow()
+        user.last_login = datetime.now()
         session = AuthService._create_session(user.id, request)
         db.session.commit()
         create_audit_log('LOGIN', f'User {user.username} logged in', user.id, request)

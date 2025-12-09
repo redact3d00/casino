@@ -135,10 +135,10 @@ if __name__ == '__main__':
     print(f"Debug mode: {app.config['DEBUG']}")
     print(f"Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
     print(f"Server: http://localhost:5005")
-    print(f"Admin login: admin / Admin123!")
-    print(f"Support login: support / Support123!")
-    print(f"Moderator login: moderator / Moderator123!")
-    print(f"Test player: testplayer / Test123!")
+    print(f"Admin: admin / Admin123!")
+    print(f"Support: support / Support123!")
+    print(f"Moderator: moderator / Moderator123!")
+    print(f"Test: testplayer / Test123!")
     print("-" * 50)
     
     app.run(
