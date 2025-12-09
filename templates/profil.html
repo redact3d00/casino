@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Мой профиль</h2>
+  <p><strong>Логин:</strong> {{ current_user.username }}</p>
+  <p><strong>Email:</strong> {{ current_user.email }}</p>
+  <p><strong>Баланс:</strong> ${{ "%.2f"|format(current_user.balance) }}</p>
+  <p><strong>Статус:</strong> {{ current_user.status.value }}</p>
+  <a href="/edit-profile" class="btn btn-warning">Редактировать профиль</a>
+</div>
+{% endblock %}

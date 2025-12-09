@@ -2,6 +2,7 @@ import os
 from flask import Flask, send_from_directory, jsonify, render_template, request, redirect, url_for
 from flask_cors import CORS
 from flask_login import LoginManager, current_user, login_required
+from flask_wtf.csrf import CSRFProtect  # Новый импорт для CSRF
 from flask_migrate import Migrate
 from models import db, User
 from config import Config
@@ -9,16 +10,17 @@ from config import Config
 def create_app():
     app = Flask(__name__, static_folder='static', template_folder='templates')
     app.config.from_object(Config)
-    
     CORS(app, supports_credentials=True)
+
     db.init_app(app)
-    
     login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = 'login_page'
-    
+
+    csrf = CSRFProtect(app)
+
     migrate = Migrate(app, db)
-    
+
     @login_manager.user_loader
     def load_user(user_id):
         try:
@@ -26,7 +28,7 @@ def create_app():
         except:
             return None
     
-    from routes.auth import auth_bp
+    from routes.auth import auth_bp, admin_required, moderator_required, support_required, staff_required
     from routes.games import games_bp
     from routes.admin import admin_bp
     from routes.payments import payments_bp
@@ -121,6 +123,12 @@ def create_app():
             })
         return jsonify({'authenticated': False})
     
+    @app.errorhandler(400)
+    def bad_request(error):
+        if request.path.startswith('/api/'):
+            return jsonify({'error': 'Bad Request'}), 400
+        return render_template('400.html'), 400
+    
     @app.errorhandler(404)
     def not_found(error):
         return render_template('404.html'), 404
@@ -146,6 +154,98 @@ def create_app():
     @app.context_processor
     def inject_user():
         return dict(current_user=current_user)
+    
+    @app.route('/profile')
+    @login_required
+    def profile():
+        return render_template('profile.html')
+
+    @app.route('/edit-profile')
+    @login_required
+    def edit_profile():
+        return render_template('edit_profile.html')
+
+    @app.route('/payments')
+    @login_required
+    def payments():
+        return render_template('payments.html')
+
+    @app.route('/deposit')
+    @login_required
+    def deposit():
+        return render_template('deposit.html')
+
+    @app.route('/request-withdrawal')
+    @login_required
+    def request_withdrawal():
+        return render_template('request_withdrawal.html')
+
+    @app.route('/support')
+    @login_required
+    def support():
+        return render_template('support.html')
+
+    @app.route('/support/ticket/<int:ticket_id>')
+    @login_required
+    def support_ticket(ticket_id):
+        return render_template('support_ticket.html', ticket_id=ticket_id)
+
+    # Админка — использует твои существующие роуты
+    @app.route('/admin/users')
+    @login_required
+    def admin_users_page():
+        if current_user.role != UserRole.ADMIN:
+            return redirect('/dashboard')
+        return render_template('admin/users.html')
+
+    @app.route('/admin/games')
+    @login_required
+    def admin_games_page():
+        if current_user.role not in [UserRole.ADMIN, UserRole.MODERATOR]:
+            return redirect('/dashboard')
+        return render_template('admin/games.html')
+
+    @app.route('/admin/support-tickets')
+    @login_required
+    def admin_support_tickets_page():
+        if current_user.role not in [UserRole.ADMIN, UserRole.MODERATOR, UserRole.SUPPORT]:
+            return redirect('/dashboard')
+        return render_template('admin/support_tickets.html')
+
+    @app.route('/admin/kyc')
+    @login_required
+    def admin_kyc_page():
+        if current_user.role not in [UserRole.ADMIN, UserRole.SUPPORT]:
+            return redirect('/dashboard')
+        return render_template('admin/kyc.html')
+
+    @app.route('/admin/transactions')
+    @login_required
+    def admin_transactions_page():
+        if current_user.role != UserRole.ADMIN:
+            return redirect('/dashboard')
+        return render_template('admin/transactions.html')
+
+    @app.route('/admin/payouts')
+    @login_required
+    def admin_payouts_page():
+        if current_user.role != UserRole.ADMIN:
+            return redirect('/dashboard')
+        return render_template('admin/payouts.html')
+
+    @app.route('/admin/audit')
+    @login_required
+    def admin_audit_page():
+        if current_user.role != UserRole.ADMIN:
+            return redirect('/dashboard')
+        return render_template('admin/audit.html')
+
+    @app.route('/admin/reports')
+    @login_required
+    def admin_reports_page():
+        if current_user.role != UserRole.ADMIN:
+            return redirect('/dashboard')
+        return render_template('admin/reports.html')
     
     return app
 

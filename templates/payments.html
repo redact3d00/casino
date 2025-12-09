@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Платежи{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Платежи</h2>
+  <a href="/deposit" class="btn btn-success">Пополнить</a>
+  <a href="/request-withdrawal" class="btn btn-primary">Вывод</a>
+  <h3 class="mt-4">История транзакций</h3>
+  <div id="transactions"></div>
+</div>
+<script>
+fetch('/api/user/transactions', { credentials: 'include' })
+  .then(r => r.json())
+  .then(d => {
+    document.getElementById('transactions').innerHTML = d.transactions.map(t => `
+      <div class="mt-2"><strong>${t.type.value}</strong> $${t.amount} — ${new Date(t.timestamp).toLocaleString()}</div>
+    `).join('');
+  });
+</script>
+{% endblock %}

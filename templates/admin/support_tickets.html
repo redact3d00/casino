@@ -1,0 +1,31 @@
+{% extends "admin/base.html" %}
+{% block title %}Тикеты{% endblock %}
+{% block page_title %}Поддержка — Тикеты{% endblock %}
+
+{% block content %}
+<h3>Тикеты поддержки</h3>
+<div class="data-table">
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Пользователь</th><th>Тема</th><th>Статус</th><th>Приоритет</th><th>Дата</th></tr>
+    </thead>
+    <tbody id="tickets-table"></tbody>
+  </table>
+</div>
+<script>
+fetch('/api/admin/support/tickets', { credentials: 'include' })
+  .then(r => r.json())
+  .then(d => {
+    document.getElementById('tickets-table').innerHTML = d.tickets.map(t => `
+      <tr>
+        <td>${t.id}</td>
+        <td>${t.user.username}</td>
+        <td>${t.subject}</td>
+        <td>${t.status}</td>
+        <td>${t.priority}</td>
+        <td>${new Date(t.created_at).toLocaleDateString()}</td>
+      </tr>
+    `).join('');
+  });
+</script>
+{% endblock %}

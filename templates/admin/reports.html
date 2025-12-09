@@ -1,0 +1,39 @@
+{% extends "admin/base.html" %}
+{% block page_title %}Отчёты{% endblock %}
+
+{% block content %}
+<h2>Отчёты</h2>
+<div class="action-buttons">
+  <button class="btn btn-warning" onclick="exportUsers()">Экспорт пользователей (CSV)</button>
+  <button class="btn btn-warning" onclick="exportTransactions()">Экспорт транзакций (CSV)</button>
+  <button class="btn btn-warning" onclick="exportPayouts()">Экспорт выплат (CSV)</button>
+</div>
+
+<script>
+async function exportUsers() {
+  const res = await fetch('/api/admin/export/users');
+  const blob = await res.blob();
+  downloadBlob(blob, 'users.csv');
+}
+
+async function exportTransactions() {
+  const res = await fetch('/api/admin/export/transactions');
+  const blob = await res.blob();
+  downloadBlob(blob, 'transactions.csv');
+}
+
+async function exportPayouts() {
+  const res = await fetch('/api/admin/export/payouts');
+  const blob = await res.blob();
+  downloadBlob(blob, 'payouts.csv');
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+}
+</script>
+{% endblock %}

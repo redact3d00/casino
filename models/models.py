@@ -56,7 +56,6 @@ class KYCStatus(enum.Enum):
 
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
-    
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -64,7 +63,7 @@ class User(db.Model, UserMixin):
     role = db.Column(db.Enum(UserRole), default=UserRole.PLAYER, nullable=False)
     balance = db.Column(db.Float, default=0.00, nullable=False)
     status = db.Column(db.Enum(UserStatus), default=UserStatus.VERIFICATION, nullable=False)
-    registered_at = db.Column(db.DateTime, default=datetime.now, nullable=False)
+    registered_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)  # Исправлено: utcnow для consistency
     loyalty_level = db.Column(db.String(20), default='standard')
     bet_limit = db.Column(db.Float, default=1000.00)
     time_limit = db.Column(db.Integer)
@@ -85,48 +84,26 @@ class User(db.Model, UserMixin):
     session_time_limit = db.Column(db.Integer, default=120)
     cool_off_period = db.Column(db.Integer, default=0)
     self_excluded_until = db.Column(db.DateTime)
-    
-    # Relationships
+
+    # Исправления: Явные foreign_keys для избежания конфликтов
     sessions = db.relationship('Session', backref='user', lazy=True, cascade='all, delete-orphan')
     bets = db.relationship('Bet', backref='user', lazy=True, cascade='all, delete-orphan')
     transactions = db.relationship('Transaction', backref='user', lazy=True, cascade='all, delete-orphan')
     payouts = db.relationship('Payout', backref='user', lazy=True, cascade='all, delete-orphan')
     bonuses = db.relationship('Bonus', backref='user', lazy=True, cascade='all, delete-orphan')
-    
-    # KYC documents submitted by this user
-    kyc_documents = db.relationship('KYCDocument', 
-                                    foreign_keys='KYCDocument.user_id',
-                                    backref='user_doc', 
-                                    lazy=True, 
-                                    cascade='all, delete-orphan')
-    
-    # KYC documents verified by this user (as admin)
-    verified_documents = db.relationship('KYCDocument',
-                                         foreign_keys='KYCDocument.verified_by',
-                                         backref='verifier_user',
-                                         lazy=True)
-    
-    # Support tickets created by this user
-    support_tickets = db.relationship('SupportTicket', 
-                                     foreign_keys='SupportTicket.user_id', 
-                                     backref='created_by', 
-                                     lazy=True)
-    
-    # Support tickets assigned to this user (as admin/support)
-    assigned_tickets = db.relationship('SupportTicket', 
-                                      foreign_keys='SupportTicket.admin_id', 
-                                      backref='assigned_to', 
-                                      lazy=True)
-    
-    # Audit logs created by this user
-    audit_logs = db.relationship('AuditLog',
-                                foreign_keys='AuditLog.actor_id',
-                                backref='actor_user',
-                                lazy=True)
-    
+    kyc_documents = db.relationship(
+        'KYCDocument',
+        foreign_keys='KYCDocument.user_id',  # ← Ключевой фикс
+        backref='owner',  # Избегаем конфликта с verifier
+        lazy=True,
+        cascade='all, delete-orphan'
+    )
+    support_tickets = db.relationship('SupportTicket', foreign_keys='SupportTicket.user_id', backref='user', lazy=True)
+    assigned_tickets = db.relationship('SupportTicket', foreign_keys='SupportTicket.admin_id', backref='admin', lazy=True)
+
     def get_id(self):
         return str(self.id)
-    
+
     def __repr__(self):
         return f'<User {self.username}>'
 
@@ -259,7 +236,6 @@ class AuditLog(db.Model):
 
 class KYCDocument(db.Model):
     __tablename__ = 'kyc_documents'
-    
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     document_type = db.Column(db.String(50), nullable=False)
@@ -268,13 +244,13 @@ class KYCDocument(db.Model):
     back_image = db.Column(db.String(200))
     selfie_image = db.Column(db.String(200))
     status = db.Column(db.Enum(KYCStatus), default=KYCStatus.PENDING)
-    submitted_at = db.Column(db.DateTime, default=datetime.now)
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
     verified_at = db.Column(db.DateTime)
     verified_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     rejection_reason = db.Column(db.Text)
-    
-    # Relationships are defined in User model
-    
+
+    verifier = db.relationship('User', foreign_keys=[verified_by], backref='verified_documents')
+
     def __repr__(self):
         return f'<KYCDocument {self.id} {self.document_type}>'
 
@@ -296,7 +272,6 @@ class SupportTicket(db.Model):
     
     messages = db.relationship('SupportMessage', backref='ticket', lazy=True, cascade='all, delete-orphan')
     
-    # Relationships are defined in User model
     
     def __repr__(self):
         return f'<SupportTicket {self.id} {self.subject}>'
@@ -310,7 +285,7 @@ class SupportMessage(db.Model):
     message = db.Column(db.Text, nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     read = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
     
     user = db.relationship('User')
     
@@ -325,7 +300,7 @@ class Announcement(db.Model):
     content = db.Column(db.Text, nullable=False)
     type = db.Column(db.String(50))
     active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
     expires_at = db.Column(db.DateTime)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     

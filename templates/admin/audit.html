@@ -1,0 +1,29 @@
+{% extends "admin/base.html" %}
+{% block title %}Аудит{% endblock %}
+{% block page_title %}Лог действий{% endblock %}
+
+{% block content %}
+<h3>Последние действия</h3>
+<div class="data-table">
+  <table>
+    <thead>
+      <tr><th>Время</th><th>Кто</th><th>Действие</th><th>Описание</th></tr>
+    </thead>
+    <tbody id="audit-table"></tbody>
+  </table>
+</div>
+<script>
+fetch('/api/admin/audit', { credentials: 'include' })
+  .then(r => r.json())
+  .then(d => {
+    document.getElementById('audit-table').innerHTML = d.logs.map(l => `
+      <tr>
+        <td>${new Date(l.timestamp).toLocaleString()}</td>
+        <td>${l.actor.username}</td>
+        <td>${l.action}</td>
+        <td>${l.description}</td>
+      </tr>
+    `).join('');
+  });
+</script>
+{% endblock %}

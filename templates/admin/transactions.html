@@ -1,0 +1,30 @@
+{% extends "admin/base.html" %}
+{% block title %}Транзакции{% endblock %}
+{% block page_title %}Транзакции{% endblock %}
+
+{% block content %}
+<h3>Все транзакции</h3>
+<div class="data-table">
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Пользователь</th><th>Тип</th><th>Сумма</th><th>Дата</th></tr>
+    </thead>
+    <tbody id="transactions-table"></tbody>
+  </table>
+</div>
+<script>
+fetch('/api/admin/transactions', { credentials: 'include' })
+  .then(r => r.json())
+  .then(d => {
+    document.getElementById('transactions-table').innerHTML = d.transactions.map(t => `
+      <tr>
+        <td>${t.id}</td>
+        <td>${t.user.username}</td>
+        <td>${t.type}</td>
+        <td>$${t.amount.toFixed(2)}</td>
+        <td>${new Date(t.timestamp).toLocaleString()}</td>
+      </tr>
+    `).join('');
+  });
+</script>
+{% endblock %}

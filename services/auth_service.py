@@ -1,77 +1,55 @@
 from models import db, User, Session, AuditLog, UserRole, UserStatus
 from utils.security import validate_password, validate_email, create_audit_log
-from flask_bcrypt import generate_password_hash, check_password_hash
+from flask_bcrypt import generate_password_hash, check_password_hash  # Фикс: Импорт bcrypt
 from datetime import datetime
 import jwt
 
 class AuthService:
-    
     @staticmethod
     def register_user(username, email, password, request):
         if not username or not email or not password:
             return {'success': False, 'error': 'Missing required fields'}
-        
-        if not validate_email(email):
+        if not validate_email(email):  
             return {'success': False, 'error': 'Invalid email format'}
-        
         is_valid, message = validate_password(password)
         if not is_valid:
             return {'success': False, 'error': message}
-        
         if User.query.filter_by(username=username).first():
             return {'success': False, 'error': 'Username already exists'}
-        
         if User.query.filter_by(email=email).first():
             return {'success': False, 'error': 'Email already registered'}
-        
+
         user = User(
             username=username,
             email=email,
             password_hash=generate_password_hash(password).decode('utf-8'),
             role=UserRole.PLAYER,
             status=UserStatus.VERIFICATION,
-            registered_at=datetime.now()
+            registered_at=datetime.utcnow()
         )
-        
         db.session.add(user)
         db.session.commit()
-        
+
         session = AuthService._create_session(user.id, request)
-        
         create_audit_log('REGISTER', f'User {username} registered', user.id, request)
-        
-        return {
-            'success': True,
-            'user': user,
-            'session': session
-        }
-    
+        return {'success': True, 'user': user, 'session': session}
+
     @staticmethod
     def login_user(username, password, request):
         user = User.query.filter_by(username=username).first()
-        
-        if not user or not check_password_hash(user.password_hash, password):
+        if not user or not check_password_hash(user.password_hash, password):  # Фикс: bcrypt check
             return {'success': False, 'error': 'Invalid credentials'}
-        
         if user.status == UserStatus.BLOCKED:
             return {'success': False, 'error': 'Account is blocked'}
-        
         if user.status == UserStatus.VERIFICATION:
             return {'success': False, 'error': 'Account pending verification'}
-        
-        user.last_login = datetime.now()
-        
+
+        user.last_login = datetime.utcnow()
         session = AuthService._create_session(user.id, request)
-        
         db.session.commit()
-        
         create_audit_log('LOGIN', f'User {user.username} logged in', user.id, request)
-        
-        return {
-            'success': True,
-            'user': user,
-            'session': session
-        }
+        return {'success': True, 'user': user, 'session': session}
+
     
     @staticmethod
     def logout_user(user_id, request):
@@ -101,7 +79,7 @@ class AuthService:
         
         token = jwt.encode({
             'user_id': user_id,
-            'exp': datetime.now().timestamp() + 86400  # 24 часа
+            'exp': datetime.now().timestamp() + 86400 
         }, 'secret-key', algorithm='HS256')
         
         session.token = token

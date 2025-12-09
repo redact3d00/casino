@@ -1,8 +1,10 @@
 from app import app
 import os
 from models import db, User, Game, UserRole, UserStatus, KYCStatus
-from werkzeug.security import generate_password_hash
+from flask_bcrypt import Bcrypt
 from datetime import datetime
+
+bcrypt = Bcrypt()
 
 def create_default_data():
     with app.app_context():
@@ -15,7 +17,7 @@ def create_default_data():
                 admin = User(
                     username='admin',
                     email='admin@casino.local',
-                    password_hash=generate_password_hash('Admin123!'),
+                    password_hash=bcrypt.generate_password_hash('Admin123!').decode('utf-8'),
                     role=UserRole.ADMIN,
                     status=UserStatus.ACTIVE,
                     kyc_verified=True,
@@ -31,7 +33,7 @@ def create_default_data():
                 player = User(
                     username='testplayer',
                     email='player@casino.local',
-                    password_hash=generate_password_hash('Test123!'),
+                    password_hash=bcrypt.generate_password_hash('Test123!').decode('utf-8'),
                     role=UserRole.PLAYER,
                     status=UserStatus.ACTIVE,
                     kyc_verified=True,
@@ -47,7 +49,7 @@ def create_default_data():
                 support = User(
                     username='support',
                     email='support@casino.local',
-                    password_hash=generate_password_hash('Support123!'),
+                    password_hash=bcrypt.generate_password_hash('Support123!').decode('utf-8'),
                     role=UserRole.SUPPORT,
                     status=UserStatus.ACTIVE,
                     kyc_verified=True,
@@ -63,7 +65,7 @@ def create_default_data():
                 moderator = User(
                     username='moderator',
                     email='moderator@casino.local',
-                    password_hash=generate_password_hash('Moderator123!'),
+                    password_hash=bcrypt.generate_password_hash('Moderator123!').decode('utf-8'),
                     role=UserRole.MODERATOR,
                     status=UserStatus.ACTIVE,
                     kyc_verified=True,
@@ -132,7 +134,7 @@ if __name__ == '__main__':
     print("\nStarting Casino application...")
     print(f"Debug mode: {app.config['DEBUG']}")
     print(f"Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
-    print(f"Server: http://localhost:5000")
+    print(f"Server: http://localhost:5005")
     print(f"Admin login: admin / Admin123!")
     print(f"Support login: support / Support123!")
     print(f"Moderator login: moderator / Moderator123!")
@@ -141,6 +143,6 @@ if __name__ == '__main__':
     
     app.run(
         host='0.0.0.0',
-        port=5000,
+        port=5005,
         debug=app.config['DEBUG']
     )
